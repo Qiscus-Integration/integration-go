@@ -1,0 +1,54 @@
+version: '3.4'
+x-env: &env
+  DB_HOST: "db"
+  DB_PORT: "5432"
+  DB_USER: "postgres"
+  DB_PASSWORD: "postgres"
+  DB_NAME: "integration"
+  REDIS_URL: "redis://redis:6379"
+  QISCUS_APP_ID: "karm-gzu41e4e4dv9fu3f"
+  QISCUS_SECRET_KEY: "9d54f6697777234479341ed20dba7517"
+  API_KEY: "secret"
+
+services:
+  redis:
+    restart: always
+    image: redis:3.2-alpine
+    command: redis-server
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+  db:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=integration
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+  app:
+    depends_on:
+      - redis
+      - db
+    restart: always
+    build: .
+    image: integration-go:latest
+    command: ["./binary", "server"]
+    ports:
+      - "8080:8080"
+    environment: *env
+  cron:
+    depends_on:
+      - redis
+      - db
+      - app
+    restart: always
+    image: integration-go:latest
+    command: ["./binary", "cron"]
+    environment: *env
+volumes:
+  redis-data:
+  postgres-data:

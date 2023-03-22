@@ -1,4 +1,4 @@
-package infra
+package common
 
 import (
 	"github.com/go-redis/redis"

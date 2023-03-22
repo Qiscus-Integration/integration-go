@@ -2,8 +2,8 @@ package cron
 
 import (
 	"context"
+	"integration-go/common"
 	"integration-go/domain"
-	"integration-go/infra"
 	"integration-go/repository/api"
 	"integration-go/repository/cache"
 	"integration-go/repository/pgsql"
@@ -18,8 +18,8 @@ import (
 
 // NewCron creates a new instance of Cron struct.
 func NewCron() *Cron {
-	dbConn := infra.NewDatabase()
-	cacheConn := infra.NewCache(os.Getenv("REDIS_URL"))
+	dbConn := common.NewDatabase()
+	cacheConn := common.NewCache(os.Getenv("REDIS_URL"))
 
 	roomRepo := pgsql.NewPgsqlRoom(dbConn)
 	omniRepo := api.NewApiQismo(os.Getenv("QISCUS_APP_ID"), os.Getenv("QISCUS_SECRET_KEY"))

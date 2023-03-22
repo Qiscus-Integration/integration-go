@@ -8,7 +8,7 @@ The Qiscus Integration team's Go project boilerplate is designed to speed up app
 Main applications for this project. The directory name for each application should match the name of the executable you want to have. Don't put a lot of code in the directory.
 
 ### `/common`
-The directory is used to hold code that is shared across different parts of the application. The common directory may contain utility functions, constants, error types and other modules that are used by multiple packages within the application. The purpose of the common directory is to avoid code duplication and to keep the shared code organized in one place.
+The directory is used to hold code that is shared across different parts of the application. The common directory may contain utility functions, constants, error types, database connection and other modules that are used by multiple packages within the application. The purpose of the common directory is to avoid code duplication and to keep the shared code organized in one place.
 
 ### `/cron`
 The cron directory contains code related to running scheduled tasks or background jobs using the operating system's cron scheduler. The directory may include files for defining and configuring the cron jobs, as well as the code to execute the tasks.
@@ -18,9 +18,6 @@ This directory will act as the presenter layer. Decide how the data will present
 
 ### `/domain`
 The domain layer is a representation of the application's business logic in the code. It contains the entities and value objects that the application uses to model its business concepts and rules. The domain layer is independent of any specific technology or implementation details and is designed to be reusable and independent.
-
-### `/infra`
-The directory is used to hold infrastructure-related code. The infra directory may contain code that interacts with external systems or services, such as databases, message brokers, cloud storage providers, and so on.
 
 ### `/repository`
 This directory containing adapters to different storage implementations. A data source might be an adapter to a SQL database, an elastic search adapter, or REST API. A data source implements methods defined on the repository and stores the implementation of fetching and pushing the data.

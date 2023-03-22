@@ -3,8 +3,8 @@ package server
 import (
 	"context"
 	"fmt"
+	"integration-go/common"
 	"integration-go/domain"
-	"integration-go/infra"
 	"integration-go/repository/api"
 	"integration-go/repository/cache"
 	"integration-go/repository/pgsql"
@@ -26,8 +26,8 @@ import (
 // for the server to function properly, including the database connection, repositories,
 // and use case
 func NewServer() *Server {
-	dbConn := infra.NewDatabase()
-	cacheConn := infra.NewCache(os.Getenv("REDIS_URL"))
+	dbConn := common.NewDatabase()
+	cacheConn := common.NewCache(os.Getenv("REDIS_URL"))
 
 	roomRepo := pgsql.NewPgsqlRoom(dbConn)
 	omniRepo := api.NewApiQismo(os.Getenv("QISCUS_APP_ID"), os.Getenv("QISCUS_SECRET_KEY"))

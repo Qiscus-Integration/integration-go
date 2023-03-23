@@ -7,7 +7,7 @@ import (
 	"integration-go/domain"
 	"integration-go/repository/api"
 	"integration-go/repository/cache"
-	"integration-go/repository/pgsql"
+	"integration-go/repository/persist"
 	"integration-go/usecase"
 	"net/http"
 	"os"
@@ -29,11 +29,11 @@ func NewServer() *Server {
 	dbConn := common.NewDatabase()
 	cacheConn := common.NewCache(os.Getenv("REDIS_URL"))
 
-	roomRepo := pgsql.NewPgsqlRoom(dbConn)
+	roomRepo := persist.NewPgsqlRoom(dbConn)
+	roomCacheRepo := cache.NewRedisRoom(cacheConn, 10*time.Minute)
 	omniRepo := api.NewApiQismo(os.Getenv("QISCUS_APP_ID"), os.Getenv("QISCUS_SECRET_KEY"))
-	cacheRepo := cache.NewCacheRedis(cacheConn)
 
-	roomUC := usecase.NewRoom(roomRepo, omniRepo, cacheRepo)
+	roomUC := usecase.NewRoom(roomRepo, omniRepo, roomCacheRepo)
 
 	srv := &Server{
 		Router: chi.NewRouter(),

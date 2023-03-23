@@ -6,7 +6,7 @@ import (
 	"integration-go/domain"
 	"integration-go/repository/api"
 	"integration-go/repository/cache"
-	"integration-go/repository/pgsql"
+	"integration-go/repository/persist"
 	"integration-go/usecase"
 	"os"
 	"time"
@@ -21,11 +21,11 @@ func NewCron() *Cron {
 	dbConn := common.NewDatabase()
 	cacheConn := common.NewCache(os.Getenv("REDIS_URL"))
 
-	roomRepo := pgsql.NewPgsqlRoom(dbConn)
+	roomRepo := persist.NewPgsqlRoom(dbConn)
+	roomCacheRepo := cache.NewRedisRoom(cacheConn, 10*time.Minute)
 	omniRepo := api.NewApiQismo(os.Getenv("QISCUS_APP_ID"), os.Getenv("QISCUS_SECRET_KEY"))
-	cacheRepo := cache.NewCacheRedis(cacheConn)
 
-	roomUC := usecase.NewRoom(roomRepo, omniRepo, cacheRepo)
+	roomUC := usecase.NewRoom(roomRepo, omniRepo, roomCacheRepo)
 
 	cron := &Cron{
 		roomUC: roomUC,
@@ -42,7 +42,7 @@ type Cron struct {
 func (c *Cron) Run() {
 	log.Info().Msg("cron is started")
 
-	gocron.Every(uint64(1 * time.Minute)).Do(func() {
+	gocron.Every(1).Minute().Do(func() {
 		reqID := uuid.New().String()
 		ctx := log.With().Str("request_id", reqID).Logger().WithContext(context.Background())
 

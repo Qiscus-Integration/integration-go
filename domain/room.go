@@ -17,7 +17,15 @@ type Room struct {
 type RoomRepository interface {
 	Save(ctx context.Context, room *Room) (err error)
 	Fetch(ctx context.Context) (rooms []Room, err error)
+	GetByID(ctx context.Context, id int64) (room Room, err error)
 	DeleteBy(ctx context.Context, query map[string]interface{}) (err error)
+}
+
+// RoomCacheRepository represents a repository that provides cache related operations.
+type RoomCacheRepository interface {
+	Save(ctx context.Context, room Room) (err error)
+	GetByID(ctx context.Context, id int64) (room Room, err error)
+	DeletetByID(ctx context.Context, id int64) (err error)
 }
 
 // OmnichannelRepository defines an interface for interacting with an omnichannel platform.
@@ -29,13 +37,6 @@ type OmnichannelRepository interface {
 // RoomUsecase main application business logic hold room usecases
 type RoomUsecase interface {
 	CreateRoom(ctx context.Context, room *Room) (err error)
-	FetchRoom(ctx context.Context) (rooms []Room, err error)
+	GetRoomByID(ctx context.Context, id int64) (room Room, err error)
 	ExecuteResolvedRoom(ctx context.Context) (err error)
-}
-
-// CacheRepository represents a repository that provides cache related operations.
-type CacheRepository interface {
-	Set(ctx context.Context, key string, value interface{}, exp time.Duration) (err error)
-	Get(ctx context.Context, key string) (res string, err error)
-	Del(ctx context.Context, key string) (err error)
 }

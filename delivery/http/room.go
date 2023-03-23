@@ -5,6 +5,7 @@ import (
 	"integration-go/delivery/http/middleware"
 	"integration-go/domain"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -47,7 +48,7 @@ func (h *room) HandleNewSessionWebhook() http.HandlerFunc {
 
 		var body newSessionWebhookReq
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			respJSON(w, http.StatusInternalServerError, ResponseError{Message: err.Error()})
 			return
 		}
 
@@ -56,30 +57,31 @@ func (h *room) HandleNewSessionWebhook() http.HandlerFunc {
 		}
 
 		if err := h.roomUC.CreateRoom(ctx, room); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			respJSON(w, getErrStatusCode(err), ResponseError{Message: err.Error()})
 			return
 		}
 
-		w.Write([]byte("ok"))
-
+		respJSON(w, http.StatusOK, "ok")
 	}
 }
 
-func (h *room) FetchRoom() http.HandlerFunc {
+func (h *room) GetRoomByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		rooms, err := h.roomUC.FetchRoom(ctx)
+		id, err := strconv.Atoi(chi.URLParam(r, "id"))
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			respJSON(w, http.StatusBadRequest, ResponseError{Message: domain.ErrBadParamInput.Error()})
 			return
 		}
 
-		resp, _ := json.Marshal(rooms)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(resp)
+		room, err := h.roomUC.GetRoomByID(ctx, int64(id))
+		if err != nil {
+			respJSON(w, getErrStatusCode(err), ResponseError{Message: err.Error()})
+			return
+		}
 
+		respJSON(w, http.StatusOK, room)
 	}
 }
 
@@ -89,7 +91,7 @@ func (h *room) HandleRoute(r chi.Router) {
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.ApiKey)
 		r.Route("/api/v1", func(r chi.Router) {
-			r.Get("/rooms", h.FetchRoom())
+			r.Get("/rooms/{id}", h.GetRoomByID())
 		})
 	})
 }

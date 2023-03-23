@@ -1,4 +1,4 @@
-package pgsql
+package persist
 
 import (
 	"context"
@@ -24,6 +24,11 @@ func (r *pgsqlRoom) Save(ctx context.Context, room *domain.Room) (err error) {
 
 func (r *pgsqlRoom) Fetch(ctx context.Context) (rooms []domain.Room, err error) {
 	err = r.db.WithContext(ctx).Find(&rooms).Error
+	return
+}
+
+func (r *pgsqlRoom) GetByID(ctx context.Context, id int64) (room domain.Room, err error) {
+	err = r.db.WithContext(ctx).First(&room, id).Error
 	return
 }
 

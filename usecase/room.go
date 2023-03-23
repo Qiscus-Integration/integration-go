@@ -43,7 +43,7 @@ func (r *room) GetRoomByID(ctx context.Context, id int64) (room domain.Room, err
 
 	go func() {
 		if err := r.roomCacheRepo.Save(ctx, room); err != nil {
-			log.Ctx(ctx).Error().Msgf("unable to save room cache: %s", err.Error())
+			log.Ctx(ctx).Error().Msgf("failed to save room cache: %s", err.Error())
 		}
 	}()
 

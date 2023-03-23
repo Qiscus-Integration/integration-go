@@ -7,10 +7,10 @@ import (
 
 // Room ...
 type Room struct {
-	ID                 int64
-	MultichannelRoomID string `gorm:"index"`
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
+	ID                 int64     `json:"id"`
+	MultichannelRoomID string    `json:"multichannel_room_id" gorm:"index"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
 }
 
 // RoomRepository defines an interface for saving Room data to persistent storage.

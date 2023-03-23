@@ -71,7 +71,7 @@ func (r *room) ExecuteResolvedRoom(ctx context.Context) (err error) {
 	now := time.Now()
 	for _, room := range rooms {
 		diffMinutes := int(now.Sub(room.CreatedAt).Minutes())
-		if diffMinutes < 4 {
+		if diffMinutes < 10 {
 			return
 		}
 

@@ -6,7 +6,7 @@ import (
 )
 
 // Routers adds the routes for the server's endpoints to the router instance of the server.
-func (s *Server) routers() {
+func (s *Server) routes() {
 	s.Router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ok"))
 	})

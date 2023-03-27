@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 )
@@ -44,8 +45,13 @@ func (q *apiQismo) CreateRoomTag(ctx context.Context, roomID string, tag string)
 
 	defer res.Body.Close()
 
+	resBody, err := io.ReadAll(res.Body)
+	if err != nil {
+		return
+	}
+
 	if res.StatusCode >= http.StatusBadRequest {
-		err = fmt.Errorf("api %s is returned status code %d", res.Request.URL.String(), res.StatusCode)
+		err = fmt.Errorf("api %s returned status code %d. response body:%s", res.Request.URL.String(), res.StatusCode, string(resBody))
 		return
 	}
 
@@ -75,8 +81,13 @@ func (q *apiQismo) ResolvedRoom(ctx context.Context, roomID string) (err error) 
 
 	defer res.Body.Close()
 
+	resBody, err := io.ReadAll(res.Body)
+	if err != nil {
+		return
+	}
+
 	if res.StatusCode >= http.StatusBadRequest {
-		err = fmt.Errorf("api %s is returned status code %d", res.Request.URL.String(), res.StatusCode)
+		err = fmt.Errorf("api %s returned status code %d. response body:%s", res.Request.URL.String(), res.StatusCode, string(resBody))
 		return
 	}
 

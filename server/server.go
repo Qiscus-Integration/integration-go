@@ -41,7 +41,7 @@ func NewServer() *Server {
 	}
 
 	srv.middlewares()
-	srv.routers()
+	srv.routes()
 
 	return srv
 }

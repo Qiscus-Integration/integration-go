@@ -11,8 +11,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-co-op/gocron"
 	"github.com/google/uuid"
-	"github.com/jasonlvhit/gocron"
 	"github.com/rs/zerolog/log"
 )
 
@@ -42,12 +42,13 @@ type Cron struct {
 func (c *Cron) Run() {
 	log.Info().Msg("cron is started")
 
-	gocron.Every(1).Minute().Do(func() {
+	s := gocron.NewScheduler(time.UTC)
+	s.Every(1).Minute().Do(func() {
 		reqID := uuid.New().String()
 		ctx := log.With().Str("request_id", reqID).Logger().WithContext(context.Background())
 
 		c.roomUC.ExecuteResolvedRoom(ctx)
 	})
 
-	<-gocron.Start()
+	s.StartBlocking()
 }

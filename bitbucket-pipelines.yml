@@ -1,0 +1,23 @@
+image: amazon/aws-cli
+pipelines:
+  branches:
+    staging:
+      - step:
+          name: initial step
+          script:
+            - echo "Ready for build and publish docker image."
+      - step:
+          name: build and publish docker image
+          trigger: manual
+          services:
+            - docker
+          script:
+            - export REPO_NAME=registry.qiscus.com/integration/
+            - export PROJECT_NAME=integration-go-stag
+            - export IMAGE_TAG="${REPO_NAME}""${PROJECT_NAME}":"${BITBUCKET_BUILD_NUMBER}"
+            - docker build -t ${IMAGE_TAG} .
+            - echo ${HARBOR_PASSWORD} | docker login registry.qiscus.com --username ${HARBOR_USER} --password-stdin
+            - docker push "${IMAGE_TAG}"
+            - echo ${IMAGE_TAG}
+options:
+  docker: true

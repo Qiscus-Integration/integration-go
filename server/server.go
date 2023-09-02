@@ -3,12 +3,12 @@ package server
 import (
 	"context"
 	"fmt"
-	"integration-go/common"
 	"integration-go/domain"
 	"integration-go/repository/api"
 	"integration-go/repository/cache"
 	"integration-go/repository/persist"
 	"integration-go/usecase"
+	"integration-go/util"
 	"net/http"
 	"os"
 	"os/signal"
@@ -26,8 +26,8 @@ import (
 // for the server to function properly, including the database connection, repositories,
 // and use case
 func NewServer() *Server {
-	dbConn := common.NewDatabase()
-	cacheConn := common.NewCache(os.Getenv("REDIS_URL"))
+	dbConn := util.NewDatabase()
+	cacheConn := util.NewCache(os.Getenv("REDIS_URL"))
 
 	roomRepo := persist.NewPgsqlRoom(dbConn)
 	roomCacheRepo := cache.NewRedisRoom(cacheConn, 10*time.Minute)

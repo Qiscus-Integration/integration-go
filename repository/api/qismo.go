@@ -1,13 +1,10 @@
 package api
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
-	"io"
+	"integration-go/util"
 	"net/http"
-	"time"
 )
 
 type apiQismo struct {
@@ -21,6 +18,13 @@ func NewApiQismo(appID, secretKey string) *apiQismo {
 	return &apiQismo{appID, secretKey}
 }
 
+func (q *apiQismo) headers() map[string]string {
+	return map[string]string{
+		"Qiscus-App-Id":     q.appID,
+		"Qiscus-Secret-Key": q.secretKey,
+	}
+}
+
 func (q *apiQismo) CreateRoomTag(ctx context.Context, roomID string, tag string) (err error) {
 	url := "https://multichannel.qiscus.com/api/v1/room_tag/create"
 	payload, _ := json.Marshal(map[string]interface{}{
@@ -28,33 +32,7 @@ func (q *apiQismo) CreateRoomTag(ctx context.Context, roomID string, tag string)
 		"tag":     tag,
 	})
 
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(payload))
-	if err != nil {
-		return
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Qiscus-App-Id", q.appID)
-	req.Header.Add("Qiscus-Secret-Key", q.secretKey)
-
-	client := http.Client{Timeout: 10 * time.Second}
-	res, err := client.Do(req)
-	if err != nil {
-		return
-	}
-
-	defer res.Body.Close()
-
-	resBody, err := io.ReadAll(res.Body)
-	if err != nil {
-		return
-	}
-
-	if res.StatusCode >= http.StatusBadRequest {
-		err = fmt.Errorf("api %s returned status code %d. response body:%s", res.Request.URL.String(), res.StatusCode, string(resBody))
-		return
-	}
-
+	err = util.MakeHTTPRequest(ctx, http.MethodPost, url, payload, q.headers(), nil)
 	return
 }
 
@@ -64,32 +42,6 @@ func (q *apiQismo) ResolvedRoom(ctx context.Context, roomID string) (err error) 
 		"room_id": roomID,
 	})
 
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(payload))
-	if err != nil {
-		return
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Qiscus-App-Id", q.appID)
-	req.Header.Add("Qiscus-Secret-Key", q.secretKey)
-
-	client := http.Client{Timeout: 10 * time.Second}
-	res, err := client.Do(req)
-	if err != nil {
-		return
-	}
-
-	defer res.Body.Close()
-
-	resBody, err := io.ReadAll(res.Body)
-	if err != nil {
-		return
-	}
-
-	if res.StatusCode >= http.StatusBadRequest {
-		err = fmt.Errorf("api %s returned status code %d. response body:%s", res.Request.URL.String(), res.StatusCode, string(resBody))
-		return
-	}
-
+	err = util.MakeHTTPRequest(ctx, http.MethodPost, url, payload, q.headers(), nil)
 	return
 }

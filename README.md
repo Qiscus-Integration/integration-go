@@ -2,8 +2,7 @@
 
 ## Changelog
 
-- **v1**: checkout to the [v1 branch](https://bitbucket.org/qiscus/integration-go/src/v1/)
-  Layered architecture (delivery, usecase, repository) or driven by tech
+- **v1**: checkout to the [v1 branch](https://bitbucket.org/qiscus/integration-go/src/v1/) - Layered architecture (delivery, usecase, repository) or driven by tech
 
 ## Overview
 

@@ -55,5 +55,6 @@ To run the project locally, follow these steps:
 
 ### Generate Mock for Service
 
+- Install [Mockery](https://github.com/vektra/mockery)
 - Add the following code in the service file: `//go:generate mockery --all --case snake --output ./mocks --exported`
 - Run go generate using `make generate`

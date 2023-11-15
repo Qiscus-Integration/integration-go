@@ -3,12 +3,10 @@ package server
 import (
 	"context"
 	"fmt"
-	"integration-go/domain"
-	"integration-go/repository/api"
-	"integration-go/repository/cache"
-	"integration-go/repository/persist"
-	"integration-go/usecase"
-	"integration-go/util"
+	"integration-go/config"
+	"integration-go/pgsql"
+	"integration-go/qismo"
+	"integration-go/room"
 	"net/http"
 	"os"
 	"os/signal"
@@ -18,49 +16,77 @@ import (
 	"github.com/Qiscus-Integration/chilog"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/rs/cors"
 	"github.com/rs/zerolog/log"
+
+	roomHttpHandler "integration-go/room/handler"
 )
 
 // NewServer function initializes a new instance of the Server struct, which represents
 // the HTTP server for the application. The function initializes the necessary dependencies
 // for the server to function properly, including the database connection, repositories,
 // and use case
-func NewServer() *Server {
-	dbConn := util.NewDatabase()
-	cacheConn := util.NewCache(os.Getenv("REDIS_URL"))
+func NewServer() *server {
+	cfg := config.Load()
+	db := pgsql.NewDatabase(cfg)
 
-	roomRepo := persist.NewPgsqlRoom(dbConn)
-	roomCacheRepo := cache.NewRedisRoom(cacheConn, 10*time.Minute)
-	omniRepo := api.NewApiQismo(os.Getenv("QISCUS_APP_ID"), os.Getenv("QISCUS_SECRET_KEY"))
+	// Adapter Packages
+	roomRepo := pgsql.NewRoom(db)
+	qismo := qismo.NewClient(cfg.Qiscus.Omnichannel.URL, cfg.Qiscus.AppID, cfg.Qiscus.SecretKey)
 
-	roomUC := usecase.NewRoom(roomRepo, omniRepo, roomCacheRepo)
+	// Services
+	roomSvc := room.NewService(roomRepo, qismo)
 
-	srv := &Server{
-		Router: chi.NewRouter(),
-		roomUC: roomUC,
-	}
+	// Handlers
+	roomHandler := roomHttpHandler.NewHttpHandler(roomSvc)
 
-	srv.middlewares()
-	srv.routes()
+	r := chi.NewRouter()
+	r.Use(middleware.RealIP)
+	r.Use(chilog.Middleware(func(w http.ResponseWriter, r *http.Request) bool {
+		return r.URL.Path == "/"
+	}))
 
-	return srv
+	r.Use(cors.New(cors.Options{
+		AllowedOrigins:     []string{"*"},
+		AllowedMethods:     []string{"POST", "GET", "PUT", "DELETE", "HEAD", "OPTIONS"},
+		AllowedHeaders:     []string{"Accept", "Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization"},
+		MaxAge:             60,
+		AllowCredentials:   true,
+		OptionsPassthrough: false,
+		Debug:              false,
+	}).Handler)
+
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("ok"))
+	})
+
+	r.Route("/wh", func(r chi.Router) {
+		r.Post("/qiscus/omnichannel/new-session", roomHandler.WebhookQismoNewSession)
+	})
+
+	r.Route("/api/v1", func(r chi.Router) {
+		r.With(staticTokenAuthMiddleware(cfg.App.SecretKey)).Group(func(r chi.Router) {
+			r.Get("/rooms/:id", roomHandler.GetRoomByID)
+		})
+	})
+
+	return &server{router: r}
 }
 
-type Server struct {
-	Router chi.Router
-	roomUC domain.RoomUsecase
+type server struct {
+	router chi.Router
 }
 
 // Run method of the Server struct runs the HTTP server on the specified port. It initializes
 // a new HTTP server instance with the specified port and the server's router.
-func (s *Server) Run(port int) {
+func (s *server) Run(port int) {
 	addr := fmt.Sprintf(":%d", port)
 
 	httpSrv := http.Server{
 		Addr:         addr,
-		Handler:      s.Router,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
+		Handler:      s.router,
+		ReadTimeout:  60 * time.Second,
+		WriteTimeout: 60 * time.Second,
 	}
 
 	done := make(chan bool)
@@ -89,12 +115,4 @@ func (s *Server) Run(port int) {
 	<-done
 	log.Info().Msg("server stopped")
 
-}
-
-// Middleware functions to the router instance of the server.
-func (s *Server) middlewares() {
-	s.Router.Use(middleware.RealIP)
-	s.Router.Use(chilog.Middleware(func(w http.ResponseWriter, r *http.Request) bool {
-		return r.URL.Path == "/"
-	}))
 }

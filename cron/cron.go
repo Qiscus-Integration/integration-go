@@ -2,13 +2,10 @@ package cron
 
 import (
 	"context"
-	"integration-go/domain"
-	"integration-go/repository/api"
-	"integration-go/repository/cache"
-	"integration-go/repository/persist"
-	"integration-go/usecase"
-	"integration-go/util"
-	"os"
+	"integration-go/config"
+	"integration-go/pgsql"
+	"integration-go/qismo"
+	"integration-go/resolver"
 	"time"
 
 	"github.com/go-co-op/gocron"
@@ -17,37 +14,37 @@ import (
 )
 
 // NewCron creates a new instance of Cron struct.
-func NewCron() *Cron {
-	dbConn := util.NewDatabase()
-	cacheConn := util.NewCache(os.Getenv("REDIS_URL"))
+func NewCron() *cron {
+	cfg := config.Load()
+	db := pgsql.NewDatabase(cfg)
 
-	roomRepo := persist.NewPgsqlRoom(dbConn)
-	roomCacheRepo := cache.NewRedisRoom(cacheConn, 10*time.Minute)
-	omniRepo := api.NewApiQismo(os.Getenv("QISCUS_APP_ID"), os.Getenv("QISCUS_SECRET_KEY"))
+	roomRepo := pgsql.NewRoom(db)
+	qismo := qismo.NewClient(cfg.Qiscus.Omnichannel.URL, cfg.Qiscus.AppID, cfg.Qiscus.SecretKey)
 
-	roomUC := usecase.NewRoom(roomRepo, omniRepo, roomCacheRepo)
+	resolverSvc := resolver.NewService(roomRepo, qismo)
 
-	cron := &Cron{
-		roomUC: roomUC,
+	return &cron{
+		svc: resolverSvc,
 	}
-
-	return cron
 }
 
-type Cron struct {
-	roomUC domain.RoomUsecase
+type cron struct {
+	svc *resolver.Service
 }
 
 // Run starts the cron job and schedules it to execute every minute.
-func (c *Cron) Run() {
+func (c *cron) Run() {
 	log.Info().Msg("cron is started")
 
 	s := gocron.NewScheduler(time.UTC)
-	s.Every(1).Minute().Do(func() {
+	s.Every(60).Second().Do(func() {
 		reqID := uuid.New().String()
 		ctx := log.With().Str("request_id", reqID).Logger().WithContext(context.Background())
 
-		c.roomUC.ExecuteResolvedRoom(ctx)
+		err := c.svc.ResolvedOmnichannelRoom(ctx)
+		if err != nil {
+			log.Ctx(ctx).Error().Msgf("error handle resolved room: %s", err.Error())
+		}
 	})
 
 	s.StartBlocking()

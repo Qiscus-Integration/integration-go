@@ -29,9 +29,11 @@ require (
 )
 
 require (
+	github.com/caarlos0/env/v9 v9.0.0
 	github.com/google/uuid v1.3.0
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/rs/cors v1.10.1
 	golang.org/x/sys v0.6.0 // indirect
 	gorm.io/driver/postgres v1.5.0
 	gorm.io/gorm v1.24.7-0.20230306060331-85eaf9eeda11

@@ -1,3 +1,4 @@
+//go:generate mockery --all --case snake --output ./mocks --exported
 package room
 
 import (

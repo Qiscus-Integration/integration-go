@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"integration-go/config"
+	"integration-go/entity"
 	"integration-go/pgsql"
 	"integration-go/qismo"
 	"integration-go/room"
@@ -29,6 +30,11 @@ import (
 func NewServer() *server {
 	cfg := config.Load()
 	db := pgsql.NewDatabase(cfg)
+
+	err := db.AutoMigrate(&entity.Room{})
+	if err != nil {
+		log.Fatal().Msgf("unable to migrate database: %s", err.Error())
+	}
 
 	// Adapter Packages
 	roomRepo := pgsql.NewRoom(db)

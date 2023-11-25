@@ -3,12 +3,12 @@ pipelines:
   branches:
     staging:
       - step:
-          name: initial step
+          name: Test
+          image: golang:1.21.0
           script:
-            - echo "Ready for build and publish docker image."
+            - make test
       - step:
-          name: build and publish docker image
-          trigger: manual
+          name: Build and Publish
           services:
             - docker
           script:

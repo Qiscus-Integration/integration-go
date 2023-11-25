@@ -10,9 +10,13 @@ The Qiscus Integration team's Go project boilerplate is designed to speed up app
 
 This boilerplate is used to standardize the directory structure for projects of medium to large complexity or with the potential for it. However, for other cases that only handle one or a few processes, it is not necessary to implement this boilerplate in order to avoid over-abstraction. For example, you can use a single file like main.go or a flat architecture instead.
 
-## Directories
+One significant change from the [v1](https://bitbucket.org/qiscus/integration-go/src/v1/) is moving away from grouping code by function and, instead, organizing it by module. This approach offers several advantages:
 
-[TODO]
+- **Single Responsibility Principle**: One of the SOLID principles of object-oriented design, states that a class or module should have only one reason to change.
+- **Reusability**: Modules become more reusable across different clients, promoting code sharing and reducing duplication.
+- **Loose Coupling, High Cohesion**: Two words that describe how easy or difficult it is to change a piece of software. Grouping by module enforces loose coupling between different parts of the code while promoting high cohesion within each module.
+- **Faster Contribution**: Developers can contribute to specific modules without causing **collateral damage** in unrelated areas, speeding up the development process.
+- **Ease of Understanding**: The codebase becomes more accessible and understandable as it's organized around modules and use cases. A use case repository clarifies what each module does.
 
 ## Create New Module
 

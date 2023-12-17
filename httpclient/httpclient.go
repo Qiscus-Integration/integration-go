@@ -9,17 +9,17 @@ import (
 	"strings"
 )
 
-type httpClient struct {
+type HttpClient struct {
 	client *http.Client
 }
 
-func New(client *http.Client) *httpClient {
-	return &httpClient{
+func New(client *http.Client) *HttpClient {
+	return &HttpClient{
 		client: client,
 	}
 }
 
-func (h *httpClient) Call(ctx context.Context, method, url string, body io.Reader, headers map[string]string, response interface{}) (err error) {
+func (h *HttpClient) Call(ctx context.Context, method, url string, body io.Reader, headers map[string]string, response interface{}) (err error) {
 	req, err := http.NewRequestWithContext(ctx, strings.ToUpper(method), url, body)
 	if err != nil {
 		return

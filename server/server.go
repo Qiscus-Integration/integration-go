@@ -27,7 +27,7 @@ import (
 // the HTTP server for the application. The function initializes the necessary dependencies
 // for the server to function properly, including the database connection, repositories,
 // and use case
-func NewServer() *server {
+func NewServer() *Server {
 	cfg := config.Load()
 	db := pgsql.NewDatabase(cfg)
 
@@ -38,10 +38,10 @@ func NewServer() *server {
 
 	// Adapter Packages
 	roomRepo := pgsql.NewRoom(db)
-	qismo := qismo.NewClient(cfg.Qiscus.Omnichannel.URL, cfg.Qiscus.AppID, cfg.Qiscus.SecretKey)
+	omni := qismo.NewClient(cfg.Qiscus.Omnichannel.URL, cfg.Qiscus.AppID, cfg.Qiscus.SecretKey)
 
 	// Services
-	roomSvc := room.NewService(roomRepo, qismo)
+	roomSvc := room.NewService(roomRepo, omni)
 
 	// Handlers
 	roomHandler := roomHttpHandler.NewHttpHandler(roomSvc)
@@ -76,16 +76,16 @@ func NewServer() *server {
 		})
 	})
 
-	return &server{router: r}
+	return &Server{router: r}
 }
 
-type server struct {
+type Server struct {
 	router chi.Router
 }
 
 // Run method of the Server struct runs the HTTP server on the specified port. It initializes
 // a new HTTP server instance with the specified port and the server's router.
-func (s *server) Run(port int) {
+func (s *Server) Run(port int) {
 	addr := fmt.Sprintf(":%d", port)
 
 	httpSrv := http.Server{

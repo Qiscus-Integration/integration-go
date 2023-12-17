@@ -11,8 +11,8 @@ func cronCmd() *cobra.Command {
 		Use:   "cron",
 		Short: "Run cron",
 		Run: func(cmd *cobra.Command, args []string) {
-			cron := cron.NewCron()
-			cron.Run()
+			c := cron.NewCron()
+			c.Run()
 		},
 	}
 

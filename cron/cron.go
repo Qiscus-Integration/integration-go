@@ -2,6 +2,7 @@ package cron
 
 import (
 	"context"
+	"integration-go/client"
 	"integration-go/config"
 	"integration-go/pgsql"
 	"integration-go/qismo"
@@ -18,10 +19,11 @@ func NewCron() *Cron {
 	cfg := config.Load()
 	db := pgsql.NewDatabase(cfg)
 
+	client := client.New()
 	roomRepo := pgsql.NewRoom(db)
-	omni := qismo.NewClient(cfg.Qiscus.Omnichannel.URL, cfg.Qiscus.AppID, cfg.Qiscus.SecretKey)
+	qismo := qismo.New(client, cfg.Qiscus.Omnichannel.URL, cfg.Qiscus.AppID, cfg.Qiscus.SecretKey)
 
-	resolverSvc := resolver.NewService(roomRepo, omni)
+	resolverSvc := resolver.NewService(roomRepo, qismo)
 
 	return &Cron{
 		svc: resolverSvc,

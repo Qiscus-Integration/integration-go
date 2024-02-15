@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"integration-go/client"
 	"integration-go/config"
 	"integration-go/entity"
 	"integration-go/pgsql"
@@ -37,11 +38,12 @@ func NewServer() *Server {
 	}
 
 	// Adapter Packages
+	client := client.New()
 	roomRepo := pgsql.NewRoom(db)
-	omni := qismo.NewClient(cfg.Qiscus.Omnichannel.URL, cfg.Qiscus.AppID, cfg.Qiscus.SecretKey)
+	qismo := qismo.New(client, cfg.Qiscus.Omnichannel.URL, cfg.Qiscus.AppID, cfg.Qiscus.SecretKey)
 
 	// Services
-	roomSvc := room.NewService(roomRepo, omni)
+	roomSvc := room.NewService(roomRepo, qismo)
 
 	// Handlers
 	roomHandler := roomHttpHandler.NewHttpHandler(roomSvc)

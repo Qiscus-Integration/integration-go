@@ -4,6 +4,7 @@ package room
 import (
 	"context"
 	"errors"
+	"integration-go/client"
 	"integration-go/entity"
 	"integration-go/qismo"
 
@@ -12,7 +13,7 @@ import (
 )
 
 type omnichannel interface {
-	CreateRoomTag(ctx context.Context, roomID string, tag string) error
+	CreateRoomTag(ctx context.Context, roomID string, tag string) *client.Error
 }
 
 type Service struct {
@@ -50,13 +51,13 @@ func (s *Service) CreateRoom(ctx context.Context, req *qismo.WebhookNewSessionRe
 		Str("room_id", req.Payload.Room.IDStr).
 		Logger()
 
-	err := s.omni.CreateRoomTag(ctx, req.Payload.Room.IDStr, req.Payload.Room.IDStr)
-	if err != nil {
-		logCtx.Error().Msgf("unable to create omnichannel tag: %s", err.Error())
+	cerr := s.omni.CreateRoomTag(ctx, req.Payload.Room.IDStr, req.Payload.Room.IDStr)
+	if cerr != nil {
+		logCtx.Error().Msgf("unable to create omnichannel tag: %s", cerr.Error())
 		return entity.ErrCantProceed
 	}
 
-	err = s.roomRepo.Save(ctx, &entity.Room{
+	err := s.roomRepo.Save(ctx, &entity.Room{
 		MultichannelRoomID: req.Payload.Room.IDStr,
 	})
 

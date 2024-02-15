@@ -34,12 +34,11 @@ func (s *Service) GetRoomByID(ctx context.Context, id int64) (*entity.Room, erro
 	room, err := s.roomRepo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			logCtx.Error().Msgf("unable to find room: %s", err.Error())
-			return nil, entity.ErrNotFound
+			return nil, roomError{roomErrorNotFound}
 		}
 
 		logCtx.Error().Msgf("unable to find room: %s", err.Error())
-		return nil, entity.ErrDatabase
+		return nil, err
 	}
 
 	return room, nil
@@ -54,7 +53,7 @@ func (s *Service) CreateRoom(ctx context.Context, req *qismo.WebhookNewSessionRe
 	cerr := s.omni.CreateRoomTag(ctx, req.Payload.Room.IDStr, req.Payload.Room.IDStr)
 	if cerr != nil {
 		logCtx.Error().Msgf("unable to create omnichannel tag: %s", cerr.Error())
-		return entity.ErrCantProceed
+		return cerr
 	}
 
 	err := s.roomRepo.Save(ctx, &entity.Room{
@@ -63,7 +62,7 @@ func (s *Service) CreateRoom(ctx context.Context, req *qismo.WebhookNewSessionRe
 
 	if err != nil {
 		logCtx.Error().Msgf("unable to save room data: %s", err.Error())
-		return entity.ErrDatabase
+		return err
 	}
 
 	return nil

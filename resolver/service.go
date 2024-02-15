@@ -4,7 +4,6 @@ package resolver
 import (
 	"context"
 	"integration-go/client"
-	"integration-go/entity"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -32,7 +31,7 @@ func (s *Service) ResolvedOmnichannelRoom(ctx context.Context) error {
 	rooms, err := s.roomRepo.Fetch(ctx)
 	if err != nil {
 		logCtx.Error().Msgf("unable to fetch room data: %s", err.Error())
-		return entity.ErrDatabase
+		return err
 	}
 
 	now := time.Now()

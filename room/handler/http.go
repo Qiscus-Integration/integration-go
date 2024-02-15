@@ -2,7 +2,7 @@ package handler
 
 import (
 	"encoding/json"
-	"integration-go/httpresp"
+	"integration-go/api"
 	"integration-go/qismo"
 	"integration-go/room"
 	"net/http"
@@ -26,7 +26,7 @@ func (h *httpHandler) GetRoomByID(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
-		httpresp.WriteFail(w, http.StatusBadRequest, httpresp.Error{
+		api.WriteResponseJSON(w, http.StatusBadRequest, api.HTTPError{
 			StatusCode: http.StatusBadRequest,
 			Message:    err.Error(),
 		})
@@ -36,12 +36,11 @@ func (h *httpHandler) GetRoomByID(w http.ResponseWriter, r *http.Request) {
 
 	room, err := h.svc.GetRoomByID(ctx, int64(id))
 	if err != nil {
-		httpresp.WriteFailFromError(w, err)
+		api.WriteResponseJSONFromError(w, err)
 		return
 	}
 
-	httpresp.WriteSuccess(w, http.StatusOK, room)
-
+	api.WriteResponseJSON(w, http.StatusOK, room)
 }
 
 func (h *httpHandler) WebhookQismoNewSession(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +49,7 @@ func (h *httpHandler) WebhookQismoNewSession(w http.ResponseWriter, r *http.Requ
 	var req qismo.WebhookNewSessionRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		httpresp.WriteFail(w, http.StatusBadRequest, httpresp.Error{
+		api.WriteResponseJSON(w, http.StatusBadRequest, api.HTTPError{
 			StatusCode: http.StatusBadRequest,
 			Message:    err.Error(),
 		})
@@ -59,9 +58,9 @@ func (h *httpHandler) WebhookQismoNewSession(w http.ResponseWriter, r *http.Requ
 	}
 
 	if err := h.svc.CreateRoom(ctx, &req); err != nil {
-		httpresp.WriteFailFromError(w, err)
+		api.WriteResponseJSONFromError(w, err)
 		return
 	}
 
-	httpresp.WriteSuccess(w, http.StatusOK, "ok")
+	api.WriteResponseJSON(w, http.StatusOK, "ok")
 }

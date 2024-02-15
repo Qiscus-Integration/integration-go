@@ -3,6 +3,7 @@ package resolver
 
 import (
 	"context"
+	"integration-go/client"
 	"integration-go/entity"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 )
 
 type omnichannel interface {
-	ResolvedRoom(ctx context.Context, roomID string) error
+	ResolvedRoom(ctx context.Context, roomID string) *client.Error
 }
 
 type Service struct {
@@ -41,8 +42,8 @@ func (s *Service) ResolvedOmnichannelRoom(ctx context.Context) error {
 			return nil
 		}
 
-		if err := s.omni.ResolvedRoom(ctx, room.MultichannelRoomID); err != nil {
-			logCtx.Error().Msgf("failed to resolved room: %s", err.Error())
+		if cerr := s.omni.ResolvedRoom(ctx, room.MultichannelRoomID); cerr != nil {
+			logCtx.Error().Msgf("failed to resolved room: %s", cerr.Error())
 			continue
 		}
 

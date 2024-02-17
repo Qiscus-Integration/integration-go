@@ -1,10 +1,10 @@
 # Integration Boilerplate (Golang)
 
-## Changelog
+### Changelog
 
 - **v1**: checkout to the [v1 branch](https://bitbucket.org/qiscus/integration-go/src/v1/) - Layered architecture (delivery, usecase, repository) or driven by tech
 
-## Overview
+### Overview
 
 The Qiscus Integration team's Go project boilerplate is designed to speed up application development and ensure consistency across all integration projects. By providing a standardized structure and set of guidelines, this boilerplate makes it easier for developers to understand, review, and maintain projects. By using this boilerplate, developers can ensure that all integration projects follow a consistent structure and coding style, making it easier to onboard new team members and maintain projects in the long term.
 
@@ -18,11 +18,11 @@ One significant change from the [v1](https://bitbucket.org/qiscus/integration-go
 - **Faster Contribution**: Developers can contribute to specific modules without causing **collateral damage** in unrelated areas, speeding up the development process.
 - **Ease of Understanding**: The codebase becomes more accessible and understandable as it's organized around modules and use cases. A use case repository clarifies what each module does.
 
-## Create New Module
+### Create New Module
 
 [TODO]
 
-## Sample Use Case
+### Sample Use Case
 
 You can find the documentation for this application [here](/docs/README.md)
 
@@ -61,3 +61,21 @@ To run the project locally, follow these steps:
 - Install [Mockery](https://github.com/vektra/mockery)
 - Add the following code in the service file: `//go:generate mockery --all --case snake --output ./mocks --exported`
 - Run go generate using `make generate`
+
+### Handle HTTP Client Exceptions
+
+`client.Error` complies with Go standard error. which support Error, Unwrap, Is, As
+
+```go
+// Sample using errors.As
+err := s.omni.AssignAgent(ctx, agentID, roomID)
+if err != nil {
+    var cerr *client.Error
+    if errors.As(err, &cerr) {
+        fmt.Println(cerr.Message)     // General error message
+        fmt.Println(cerr.StatusCode)  // HTTP status code e.g: 400, 401 etc.
+        fmt.Println(cerr.RawError)    // Raw Go error object
+    }
+}
+
+```

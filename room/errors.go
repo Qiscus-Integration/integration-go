@@ -10,7 +10,7 @@ const (
 	roomErrorNotFound = iota
 )
 
-func (e roomError) Error() string {
+func (e *roomError) Error() string {
 	switch e.code {
 	case roomErrorNotFound:
 		return "Room not found"
@@ -19,7 +19,7 @@ func (e roomError) Error() string {
 	}
 }
 
-func (e roomError) HTTPStatusCode() int {
+func (e *roomError) HTTPStatusCode() int {
 	switch e.code {
 	case roomErrorNotFound:
 		return http.StatusNotFound

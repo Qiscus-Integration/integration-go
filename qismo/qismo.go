@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"integration-go/client"
 	"net/http"
 )
 
@@ -32,7 +31,7 @@ func (q *Qismo) headers() map[string]string {
 	}
 }
 
-func (q *Qismo) CreateRoomTag(ctx context.Context, roomID string, tag string) *client.Error {
+func (q *Qismo) CreateRoomTag(ctx context.Context, roomID string, tag string) error {
 	url := fmt.Sprintf("%s/api/v1/room_tag/create", q.url)
 	payload, _ := json.Marshal(map[string]interface{}{
 		"room_id": roomID,
@@ -43,7 +42,7 @@ func (q *Qismo) CreateRoomTag(ctx context.Context, roomID string, tag string) *c
 	return err
 }
 
-func (q *Qismo) ResolvedRoom(ctx context.Context, roomID string) *client.Error {
+func (q *Qismo) ResolvedRoom(ctx context.Context, roomID string) error {
 	url := fmt.Sprintf("%s/api/v1/admin/service/mark_as_resolved", q.url)
 	payload, _ := json.Marshal(map[string]interface{}{
 		"room_id": roomID,

@@ -25,11 +25,14 @@ func NewService(roomRepo roomRepository, omni omnichannel) *Service {
 }
 
 func (s *Service) ResolvedOmnichannelRoom(ctx context.Context) error {
-	logCtx := log.Ctx(ctx).With().Str("func", "resolver.service.ResolveOmnichannelRoom").Logger()
+	l := log.Ctx(ctx).
+		With().
+		Str("func", "resolver.Service.ResolveOmnichannelRoom").
+		Logger()
 
 	rooms, err := s.roomRepo.Fetch(ctx)
 	if err != nil {
-		logCtx.Error().Msgf("unable to fetch room data: %s", err.Error())
+		l.Error().Msgf("unable to fetch room data: %s", err.Error())
 		return err
 	}
 
@@ -41,7 +44,7 @@ func (s *Service) ResolvedOmnichannelRoom(ctx context.Context) error {
 		}
 
 		if err := s.omni.ResolvedRoom(ctx, room.MultichannelRoomID); err != nil {
-			logCtx.Error().Msgf("failed to resolved room: %s", err.Error())
+			l.Error().Msgf("failed to resolved room: %s", err.Error())
 			continue
 		}
 
@@ -50,7 +53,7 @@ func (s *Service) ResolvedOmnichannelRoom(ctx context.Context) error {
 		})
 
 		if err != nil {
-			logCtx.Error().Msgf("failed to delete room: %s", err.Error())
+			l.Error().Msgf("failed to delete room: %s", err.Error())
 			continue
 		}
 

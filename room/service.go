@@ -28,7 +28,10 @@ func NewService(roomRepo roomRepository, omni omnichannel) *Service {
 }
 
 func (s *Service) GetRoomByID(ctx context.Context, id int64) (*entity.Room, error) {
-	logCtx := log.Ctx(ctx).With().Str("func", "room.service.GetRoomByID").Logger()
+	l := log.Ctx(ctx).
+		With().
+		Str("func", "room.Service.GetRoomByID").
+		Logger()
 
 	room, err := s.roomRepo.FindByID(ctx, id)
 	if err != nil {
@@ -36,7 +39,7 @@ func (s *Service) GetRoomByID(ctx context.Context, id int64) (*entity.Room, erro
 			return nil, &roomError{roomErrorNotFound}
 		}
 
-		logCtx.Error().Msgf("unable to find room: %s", err.Error())
+		l.Error().Msgf("unable to find room: %s", err.Error())
 		return nil, err
 	}
 
@@ -44,14 +47,15 @@ func (s *Service) GetRoomByID(ctx context.Context, id int64) (*entity.Room, erro
 }
 
 func (s *Service) CreateRoom(ctx context.Context, req *qismo.WebhookNewSessionRequest) error {
-	logCtx := log.Ctx(ctx).With().
-		Str("func", "room.service.CreateRoom").
+	l := log.Ctx(ctx).
+		With().
+		Str("func", "room.Service.CreateRoom").
 		Str("room_id", req.Payload.Room.IDStr).
 		Logger()
 
 	err := s.omni.CreateRoomTag(ctx, req.Payload.Room.IDStr, req.Payload.Room.IDStr)
 	if err != nil {
-		logCtx.Error().Msgf("unable to create omnichannel tag: %s", err.Error())
+		l.Error().Msgf("unable to create omnichannel tag: %s", err.Error())
 		return err
 	}
 
@@ -60,7 +64,7 @@ func (s *Service) CreateRoom(ctx context.Context, req *qismo.WebhookNewSessionRe
 	})
 
 	if err != nil {
-		logCtx.Error().Msgf("unable to save room data: %s", err.Error())
+		l.Error().Msgf("unable to save room data: %s", err.Error())
 		return err
 	}
 

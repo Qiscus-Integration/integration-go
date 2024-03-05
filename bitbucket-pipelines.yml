@@ -9,14 +9,17 @@ pipelines:
             - make test
       - step:
           name: Build and Publish
+          runs-on:
+            - 'self.hosted'
+            - 'linux'
           services:
             - docker
           script:
-            - export REPO_NAME=registry.qiscus.com/integration/
+            - export REPO_NAME=registry-stage.qiscus.io/integration/
             - export PROJECT_NAME=integration-go-stag
             - export IMAGE_TAG="${REPO_NAME}""${PROJECT_NAME}":"${BITBUCKET_BUILD_NUMBER}"
             - docker build -t ${IMAGE_TAG} .
-            - echo ${HARBOR_PASSWORD} | docker login registry.qiscus.com --username ${HARBOR_USER} --password-stdin
+            - echo ${HARBOR_PASSWORD} | docker login registry-stage.qiscus.io --username ${HARBOR_USER} --password-stdin
             - docker push "${IMAGE_TAG}"
             - echo ${IMAGE_TAG}
 options:

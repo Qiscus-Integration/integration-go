@@ -4,6 +4,9 @@ pipelines:
     staging:
       - step:
           name: Test
+          runs-on:
+            - 'self.hosted'
+            - 'linux'
           image: golang:1.21.0
           script:
             - make test

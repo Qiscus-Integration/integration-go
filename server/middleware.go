@@ -1,7 +1,7 @@
 package server
 
 import (
-	"integration-go/api"
+	"integration-go/api/resp"
 	"net/http"
 )
 
@@ -14,7 +14,7 @@ func staticTokenAuthMiddleware(secretKey string) func(next http.Handler) http.Ha
 
 			tokenStr := r.Header.Get("Authorization")
 			if tokenStr != secretKey {
-				api.WriteResponseJSON(w, http.StatusUnauthorized, api.HTTPError{
+				resp.WriteJSON(w, http.StatusUnauthorized, resp.HTTPError{
 					StatusCode: http.StatusUnauthorized,
 					Message:    "Unauthorized",
 				})

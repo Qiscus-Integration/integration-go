@@ -1,4 +1,4 @@
-package api
+package resp
 
 import (
 	"encoding/json"
@@ -19,23 +19,22 @@ type DataPaginate struct {
 }
 
 type HTTPError struct {
-	StatusCode int         `json:"code"`
-	Message    string      `json:"message"`
-	Error      interface{} `json:"error"`
+	StatusCode int    `json:"error_code"`
+	Message    string `json:"error_message"`
 }
 
 type Empty struct{}
 
-func WriteResponseJSON(w http.ResponseWriter, statusCode int, data interface{}) {
+func WriteJSON(w http.ResponseWriter, code int, data interface{}) {
 	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
+	w.WriteHeader(code)
 	jsonData, _ := json.Marshal(data)
 	w.Write(jsonData)
 }
 
-func WriteResponseJSONWithPaginate(w http.ResponseWriter, statusCode int, data interface{}, total int, page int, limit int) {
+func WriteJSONWithPaginate(w http.ResponseWriter, code int, data interface{}, total int, page int, limit int) {
 	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
+	w.WriteHeader(code)
 
 	totalPages := int(math.Ceil(float64(total) / float64(limit)))
 	meta := Meta{
@@ -52,7 +51,7 @@ func WriteResponseJSONWithPaginate(w http.ResponseWriter, statusCode int, data i
 	w.Write(jsonData)
 }
 
-func WriteResponseJSONFromError(w http.ResponseWriter, err error) {
+func WriteJSONFromError(w http.ResponseWriter, err error) {
 	code := http.StatusInternalServerError
 	msg := "Something went wrong"
 

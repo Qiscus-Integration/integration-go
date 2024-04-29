@@ -13,6 +13,6 @@ func NewRootCommand() *cobra.Command {
 		},
 	}
 
-	command.AddCommand(serverCmd(), cronCmd())
+	command.AddCommand(apiCmd(), cronCmd())
 	return command
 }

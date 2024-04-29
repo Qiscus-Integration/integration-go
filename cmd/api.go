@@ -1,18 +1,18 @@
 package cmd
 
 import (
-	"integration-go/server"
+	"integration-go/api"
 
 	"github.com/spf13/cobra"
 )
 
-func serverCmd() *cobra.Command {
+func apiCmd() *cobra.Command {
 	var port int
 	var command = &cobra.Command{
-		Use:   "server",
-		Short: "Run server",
+		Use:   "api",
+		Short: "Run api server",
 		Run: func(cmd *cobra.Command, args []string) {
-			srv := server.NewServer()
+			srv := api.NewServer()
 			srv.Run(port)
 		},
 	}

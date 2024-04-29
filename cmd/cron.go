@@ -9,7 +9,7 @@ import (
 func cronCmd() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "cron",
-		Short: "Run cron",
+		Short: "Run cron server",
 		Run: func(cmd *cobra.Command, args []string) {
 			c := cron.NewCron()
 			c.Run()

@@ -15,7 +15,7 @@ import (
 )
 
 // NewCron creates a new instance of Cron struct.
-func NewCron() *Cron {
+func NewCron() *Server {
 	cfg := config.Load()
 	db := pgsql.NewDatabase(cfg)
 
@@ -25,17 +25,17 @@ func NewCron() *Cron {
 
 	resolverSvc := resolver.NewService(roomRepo, qismo)
 
-	return &Cron{
+	return &Server{
 		svc: resolverSvc,
 	}
 }
 
-type Cron struct {
+type Server struct {
 	svc *resolver.Service
 }
 
 // Run starts the cron job and schedules it to execute every minute.
-func (c *Cron) Run() {
+func (c *Server) Run() {
 	log.Info().Msg("cron is started")
 
 	s := gocron.NewScheduler(time.UTC)

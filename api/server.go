@@ -6,7 +6,6 @@ import (
 	"integration-go/client"
 	"integration-go/config"
 	"integration-go/entity"
-	"integration-go/pgsql"
 	"integration-go/qismo"
 	"integration-go/room"
 	"net/http"
@@ -20,27 +19,49 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/cors"
 	"github.com/rs/zerolog/log"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
-// NewServer function initializes a new instance of the Server struct, which represents
-// the HTTP server for the application. The function initializes the necessary dependencies
-// for the server to function properly, including the database connection, repositories,
-// and use case
 func NewServer() *Server {
 	cfg := config.Load()
-	db := pgsql.NewDatabase(cfg)
 
-	err := db.AutoMigrate(&entity.Room{})
+	dsn := fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=disable",
+		cfg.Database.Host,
+		cfg.Database.Port,
+		cfg.Database.User,
+		cfg.Database.Name,
+		cfg.Database.Password,
+	)
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+
+	if err != nil {
+		log.Fatal().Err(err).Msg("unable to open db connection")
+	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to get sql db")
+	}
+
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetConnMaxLifetime(time.Hour)
+
+	err = db.AutoMigrate(&entity.Room{})
 	if err != nil {
 		log.Fatal().Msgf("unable to migrate database: %s", err.Error())
 	}
 
-	// Adapter Packages
 	client := client.New()
-	roomRepo := pgsql.NewRoom(db)
 	qismo := qismo.New(client, cfg.Qiscus.Omnichannel.URL, cfg.Qiscus.AppID, cfg.Qiscus.SecretKey)
 
 	// Room
+	roomRepo := room.NewRepository(db)
 	roomSvc := room.NewService(roomRepo, qismo)
 	roomHandler := room.NewHttpHandler(roomSvc)
 

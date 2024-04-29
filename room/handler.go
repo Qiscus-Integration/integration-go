@@ -1,10 +1,9 @@
-package handler
+package room
 
 import (
 	"encoding/json"
 	"integration-go/api/resp"
 	"integration-go/qismo"
-	"integration-go/room"
 	"net/http"
 	"strconv"
 
@@ -12,10 +11,10 @@ import (
 )
 
 type httpHandler struct {
-	svc *room.Service
+	svc *Service
 }
 
-func NewHttpHandler(svc *room.Service) *httpHandler {
+func NewHttpHandler(svc *Service) *httpHandler {
 	return &httpHandler{
 		svc: svc,
 	}

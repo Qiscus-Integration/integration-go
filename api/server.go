@@ -20,8 +20,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/cors"
 	"github.com/rs/zerolog/log"
-
-	roomHttpHandler "integration-go/room/handler"
 )
 
 // NewServer function initializes a new instance of the Server struct, which represents
@@ -42,11 +40,9 @@ func NewServer() *Server {
 	roomRepo := pgsql.NewRoom(db)
 	qismo := qismo.New(client, cfg.Qiscus.Omnichannel.URL, cfg.Qiscus.AppID, cfg.Qiscus.SecretKey)
 
-	// Services
+	// Room
 	roomSvc := room.NewService(roomRepo, qismo)
-
-	// Handlers
-	roomHandler := roomHttpHandler.NewHttpHandler(roomSvc)
+	roomHandler := room.NewHttpHandler(roomSvc)
 
 	r := chi.NewRouter()
 	r.Use(middleware.RealIP)

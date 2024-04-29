@@ -56,10 +56,10 @@ To run the project locally, follow these steps:
 - The backend server will be accessible at `http://localhost:8080`
 - You can find another usefull commands in `Makefile`
 
-### Generate Mock for Service
+### Generate Mock from Interface
 
 - Install [Mockery](https://github.com/vektra/mockery)
-- Add the following code in the service file: `//go:generate mockery --all --case snake --output ./mocks --exported`
+- Add the following code in the interface code file: `//go:generate mockery --case snake --name XXXX`
 - Run go generate using `make generate`
 
 ### Handle HTTP Client Exceptions

@@ -1,23 +1,30 @@
-//go:generate mockery --all --case snake --output ./mocks --exported
 package resolver
 
 import (
 	"context"
+	"integration-go/entity"
 	"time"
 
 	"github.com/rs/zerolog/log"
 )
 
-type omnichannel interface {
+//go:generate mockery --case snake --name RoomRepository
+type RoomRepository interface {
+	Fetch(ctx context.Context) ([]*entity.Room, error)
+	DeleteBy(ctx context.Context, query map[string]interface{}) error
+}
+
+//go:generate mockery --case snake --name Omnichannel
+type Omnichannel interface {
 	ResolvedRoom(ctx context.Context, roomID string) error
 }
 
 type Service struct {
-	roomRepo roomRepository
-	omni     omnichannel
+	roomRepo RoomRepository
+	omni     Omnichannel
 }
 
-func NewService(roomRepo roomRepository, omni omnichannel) *Service {
+func NewService(roomRepo RoomRepository, omni Omnichannel) *Service {
 	return &Service{
 		roomRepo: roomRepo,
 		omni:     omni,

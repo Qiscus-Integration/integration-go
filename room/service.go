@@ -1,4 +1,3 @@
-//go:generate mockery --all --case snake --output ./mocks --exported
 package room
 
 import (
@@ -11,19 +10,26 @@ import (
 	"gorm.io/gorm"
 )
 
-type omnichannel interface {
+//go:generate mockery --case snake --name Omnichannel
+type Omnichannel interface {
 	CreateRoomTag(ctx context.Context, roomID string, tag string) error
 }
 
-type Service struct {
-	roomRepo roomRepository
-	omni     omnichannel
+//go:generate mockery --case snake --name Repository
+type Repository interface {
+	FindByID(ctx context.Context, id int64) (*entity.Room, error)
+	Save(ctx context.Context, room *entity.Room) error
 }
 
-func NewService(roomRepo roomRepository, omni omnichannel) *Service {
+type Service struct {
+	repo Repository
+	omni Omnichannel
+}
+
+func NewService(repo Repository, omni Omnichannel) *Service {
 	return &Service{
-		roomRepo: roomRepo,
-		omni:     omni,
+		repo: repo,
+		omni: omni,
 	}
 }
 
@@ -33,7 +39,7 @@ func (s *Service) GetRoomByID(ctx context.Context, id int64) (*entity.Room, erro
 		Str("func", "room.Service.GetRoomByID").
 		Logger()
 
-	room, err := s.roomRepo.FindByID(ctx, id)
+	room, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, &roomError{roomErrorNotFound}
@@ -59,7 +65,7 @@ func (s *Service) CreateRoom(ctx context.Context, req *qismo.WebhookNewSessionRe
 		return err
 	}
 
-	err = s.roomRepo.Save(ctx, &entity.Room{
+	err = s.repo.Save(ctx, &entity.Room{
 		MultichannelRoomID: req.Payload.Room.IDStr,
 	})
 

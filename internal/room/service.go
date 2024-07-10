@@ -10,12 +10,12 @@ import (
 	"gorm.io/gorm"
 )
 
-//go:generate mockery --case snake --name Omnichannel
+//go:generate mockery --with-expecter --case snake --name Omnichannel
 type Omnichannel interface {
 	CreateRoomTag(ctx context.Context, roomID string, tag string) error
 }
 
-//go:generate mockery --case snake --name Repository
+//go:generate mockery --with-expecter --case snake --name Repository
 type Repository interface {
 	FindByID(ctx context.Context, id int64) (*entity.Room, error)
 	Save(ctx context.Context, room *entity.Room) error

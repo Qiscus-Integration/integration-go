@@ -2,8 +2,8 @@ package room
 
 import (
 	"encoding/json"
-	"integration-go/api/resp"
-	"integration-go/qismo"
+	"integration-go/internal/api/resp"
+	"integration-go/internal/qismo"
 	"net/http"
 	"strconv"
 

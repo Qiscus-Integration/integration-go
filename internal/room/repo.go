@@ -2,7 +2,7 @@ package room
 
 import (
 	"context"
-	"integration-go/entity"
+	"integration-go/internal/entity"
 
 	"gorm.io/gorm"
 )

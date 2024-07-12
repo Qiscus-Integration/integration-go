@@ -3,8 +3,8 @@ package room
 import (
 	"context"
 	"fmt"
-	"integration-go/entity"
-	"integration-go/room/mocks"
+	"integration-go/internal/entity"
+	"integration-go/internal/room/mocks"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

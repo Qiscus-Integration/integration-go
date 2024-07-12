@@ -1,7 +1,7 @@
 package api
 
 import (
-	"integration-go/api/resp"
+	"integration-go/internal/api/resp"
 	"net/http"
 )
 

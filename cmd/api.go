@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"integration-go/api"
+	"integration-go/internal/api"
 
 	"github.com/spf13/cobra"
 )

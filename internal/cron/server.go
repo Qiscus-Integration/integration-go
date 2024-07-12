@@ -3,11 +3,11 @@ package cron
 import (
 	"context"
 	"fmt"
-	"integration-go/client"
-	"integration-go/config"
-	"integration-go/qismo"
-	"integration-go/resolver"
-	"integration-go/room"
+	"integration-go/internal/client"
+	"integration-go/internal/config"
+	"integration-go/internal/qismo"
+	"integration-go/internal/resolver"
+	"integration-go/internal/room"
 	"time"
 
 	"github.com/go-co-op/gocron"

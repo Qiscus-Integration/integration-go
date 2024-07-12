@@ -3,7 +3,7 @@ package resolver
 import (
 	"context"
 	"fmt"
-	"integration-go/entity"
+	"integration-go/internal/entity"
 	"time"
 
 	"github.com/rs/zerolog/log"

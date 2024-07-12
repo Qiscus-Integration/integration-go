@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"integration-go/entity"
-	"integration-go/qismo"
+	"integration-go/internal/entity"
+	"integration-go/internal/qismo"
 
 	"gorm.io/gorm"
 )

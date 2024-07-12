@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/rs/zerolog/log"
 )
 
 type httpHandler struct {
@@ -35,6 +36,7 @@ func (h *httpHandler) GetRoomByID(w http.ResponseWriter, r *http.Request) {
 
 	room, err := h.svc.GetRoomByID(ctx, int64(id))
 	if err != nil {
+		log.Ctx(ctx).Error().Msgf("failed to get room: %s", err.Error())
 		resp.WriteJSONFromError(w, err)
 		return
 	}
@@ -57,6 +59,7 @@ func (h *httpHandler) WebhookQismoNewSession(w http.ResponseWriter, r *http.Requ
 	}
 
 	if err := h.svc.CreateRoom(ctx, &req); err != nil {
+		log.Ctx(ctx).Error().Msgf("failed to create room: %s", err.Error())
 		resp.WriteJSONFromError(w, err)
 		return
 	}

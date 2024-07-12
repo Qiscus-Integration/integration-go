@@ -2,6 +2,7 @@ package resolver
 
 import (
 	"context"
+	"fmt"
 	"integration-go/entity"
 	"time"
 
@@ -32,15 +33,9 @@ func NewService(roomRepo RoomRepository, omni Omnichannel) *Service {
 }
 
 func (s *Service) ResolvedOmnichannelRoom(ctx context.Context) error {
-	l := log.Ctx(ctx).
-		With().
-		Str("func", "resolver.Service.ResolveOmnichannelRoom").
-		Logger()
-
 	rooms, err := s.roomRepo.Fetch(ctx)
 	if err != nil {
-		l.Error().Msgf("unable to fetch room data: %s", err.Error())
-		return err
+		return fmt.Errorf("failed to fetch rooms: %w", err)
 	}
 
 	now := time.Now()
@@ -51,7 +46,7 @@ func (s *Service) ResolvedOmnichannelRoom(ctx context.Context) error {
 		}
 
 		if err := s.omni.ResolvedRoom(ctx, room.MultichannelRoomID); err != nil {
-			l.Error().Msgf("failed to resolved room: %s", err.Error())
+			log.Ctx(ctx).Error().Msgf("failed to resolved room: %s", err.Error())
 			continue
 		}
 
@@ -60,7 +55,7 @@ func (s *Service) ResolvedOmnichannelRoom(ctx context.Context) error {
 		})
 
 		if err != nil {
-			l.Error().Msgf("failed to delete room: %s", err.Error())
+			log.Ctx(ctx).Error().Msgf("failed to delete room: %s", err.Error())
 			continue
 		}
 

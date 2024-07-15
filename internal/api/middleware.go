@@ -71,7 +71,6 @@ type logFields struct {
 	Path       string
 	Body       string
 	StatusCode int
-	OmniCode   string
 	Latency    float64
 }
 
@@ -84,7 +83,6 @@ func (l *logFields) MarshalZerologObject(e *zerolog.Event) {
 		Str("path", l.Path).
 		Str("body", l.Body).
 		Int("status_code", l.StatusCode).
-		Str("omni_code", l.OmniCode).
 		Float64("latency", l.Latency)
 }
 
@@ -125,7 +123,6 @@ func loggerHandler(filter func(w http.ResponseWriter, r *http.Request) bool) fun
 				Path:       r.URL.Path,
 				Body:       formatReqBody(r, buf),
 				StatusCode: ww.Status(),
-				OmniCode:   r.Header.Get("Qiscus-App-Id"),
 				Latency:    dur,
 			}
 

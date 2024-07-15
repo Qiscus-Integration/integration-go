@@ -1,15 +1,12 @@
 module integration-go
 
-go 1.21.1
+go 1.22.3
 
 require (
-	github.com/Qiscus-Integration/chilog v1.0.0
 	github.com/caarlos0/env/v9 v9.0.0
-	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-co-op/gocron v1.36.0
 	github.com/google/uuid v1.4.0
 	github.com/joho/godotenv v1.5.1
-	github.com/rs/cors v1.10.1
 	github.com/rs/zerolog v1.31.0
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.8.4

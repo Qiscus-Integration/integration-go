@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog/log"
 )
 
@@ -24,7 +23,7 @@ func NewHttpHandler(svc *Service) *httpHandler {
 func (h *httpHandler) GetRoomByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		resp.WriteJSON(w, http.StatusBadRequest, resp.HTTPError{
 			StatusCode: http.StatusBadRequest,

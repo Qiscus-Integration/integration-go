@@ -3,6 +3,8 @@ package api
 import (
 	"context"
 	"fmt"
+	"integration-go/internal/api/resp"
+	"integration-go/internal/auth"
 	"integration-go/internal/client"
 	"integration-go/internal/config"
 	"integration-go/internal/entity"
@@ -14,10 +16,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Qiscus-Integration/chilog"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/rs/cors"
 	"github.com/rs/zerolog/log"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -65,41 +63,27 @@ func NewServer() *Server {
 	roomSvc := room.NewService(roomRepo, qismo)
 	roomHandler := room.NewHttpHandler(roomSvc)
 
-	r := chi.NewRouter()
-	r.Use(middleware.RealIP)
-	r.Use(chilog.Middleware(func(w http.ResponseWriter, r *http.Request) bool {
-		return r.URL.Path == "/"
+	// Auth
+	authMidd := auth.NewMiddleware(cfg.App.SecretKey)
+
+	r := http.NewServeMux()
+	r.Handle("GET /", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			resp.WriteJSON(w, http.StatusNotFound, "Not Found")
+			return
+		}
+
+		resp.WriteJSON(w, http.StatusOK, "OK")
 	}))
 
-	r.Use(cors.New(cors.Options{
-		AllowedOrigins:     []string{"*"},
-		AllowedMethods:     []string{"POST", "GET", "PUT", "DELETE", "HEAD", "OPTIONS"},
-		AllowedHeaders:     []string{"Accept", "Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization"},
-		MaxAge:             60,
-		AllowCredentials:   true,
-		OptionsPassthrough: false,
-		Debug:              false,
-	}).Handler)
-
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("ok"))
-	})
-
-	r.Route("/wh", func(r chi.Router) {
-		r.Post("/qiscus/omnichannel/new-session", roomHandler.WebhookQismoNewSession)
-	})
-
-	r.Route("/api/v1", func(r chi.Router) {
-		r.With(staticTokenAuthMiddleware(cfg.App.SecretKey)).Group(func(r chi.Router) {
-			r.Get("/rooms/:id", roomHandler.GetRoomByID)
-		})
-	})
+	r.Handle("POST /wh/qiscus/omnichannel/new-session", http.HandlerFunc(roomHandler.WebhookQismoNewSession))
+	r.Handle("GET /api/v1/rooms/{id}", authMidd.StaticToken(http.HandlerFunc(roomHandler.GetRoomByID)))
 
 	return &Server{router: r}
 }
 
 type Server struct {
-	router chi.Router
+	router *http.ServeMux
 }
 
 // Run method of the Server struct runs the HTTP server on the specified port. It initializes
@@ -107,9 +91,18 @@ type Server struct {
 func (s *Server) Run(port int) {
 	addr := fmt.Sprintf(":%d", port)
 
+	h := chainMiddleware(
+		s.router,
+		recoverHandler,
+		loggerHandler(func(w http.ResponseWriter, r *http.Request) bool { return r.URL.Path == "/" }),
+		realIPHandler,
+		requestIDHandler,
+		corsHandler,
+	)
+
 	httpSrv := http.Server{
 		Addr:         addr,
-		Handler:      s.router,
+		Handler:      h,
 		ReadTimeout:  60 * time.Second,
 		WriteTimeout: 60 * time.Second,
 	}

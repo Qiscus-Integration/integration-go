@@ -1,10 +1,11 @@
 package cmd
 
 import (
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
-func NewRootCommand() *cobra.Command {
+func Execute() {
 	var command = &cobra.Command{
 		Use:   "integration-go",
 		Short: "Run service",
@@ -14,5 +15,8 @@ func NewRootCommand() *cobra.Command {
 	}
 
 	command.AddCommand(apiCmd(), cronCmd())
-	return command
+
+	if err := command.Execute(); err != nil {
+		log.Fatal().Msgf("failed run app: %s", err.Error())
+	}
 }

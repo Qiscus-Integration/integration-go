@@ -7,8 +7,10 @@ import (
 	"integration-go/internal/auth"
 	"integration-go/internal/client"
 	"integration-go/internal/config"
-	"integration-go/internal/entity"
+	"integration-go/internal/health"
+	"integration-go/internal/postgres"
 	"integration-go/internal/qismo"
+	"integration-go/internal/redis"
 	"integration-go/internal/room"
 	"net/http"
 	"os"
@@ -17,43 +19,15 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 func NewServer() *Server {
 	cfg := config.Load()
 
-	dsn := fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=disable",
-		cfg.Database.Host,
-		cfg.Database.Port,
-		cfg.Database.User,
-		cfg.Database.Name,
-		cfg.Database.Password,
-	)
+	db := postgres.NewGORM(cfg.Database)
+	postgres.Migrate(db)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
-	})
-
-	if err != nil {
-		log.Fatal().Err(err).Msg("unable to open db connection")
-	}
-
-	sqlDB, err := db.DB()
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to get sql db")
-	}
-
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(100)
-	sqlDB.SetConnMaxLifetime(time.Hour)
-
-	err = db.AutoMigrate(&entity.Room{})
-	if err != nil {
-		log.Fatal().Msgf("unable to migrate database: %s", err.Error())
-	}
+	rdb := redis.New(cfg.Redis.URL)
 
 	client := client.New()
 	qismo := qismo.New(client, cfg.Qiscus.Omnichannel.URL, cfg.Qiscus.AppID, cfg.Qiscus.SecretKey)
@@ -66,6 +40,11 @@ func NewServer() *Server {
 	// Auth
 	authMidd := auth.NewMiddleware(cfg.App.SecretKey)
 
+	// Health
+	healthRepo := health.NewRepository(db, rdb)
+	healthSvc := health.NewService(healthRepo)
+	healthHandler := health.NewHttpHandler(healthSvc)
+
 	r := http.NewServeMux()
 	r.Handle("GET /", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
@@ -76,6 +55,7 @@ func NewServer() *Server {
 		resp.WriteJSON(w, http.StatusOK, "OK")
 	}))
 
+	r.Handle("GET /health", http.HandlerFunc(healthHandler.Check))
 	r.Handle("POST /wh/qiscus/omnichannel/new-session", http.HandlerFunc(roomHandler.WebhookQismoNewSession))
 	r.Handle("GET /api/v1/rooms/{id}", authMidd.StaticToken(http.HandlerFunc(roomHandler.GetRoomByID)))
 

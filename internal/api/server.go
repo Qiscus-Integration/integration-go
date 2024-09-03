@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"integration-go/internal/api/resp"
 	"integration-go/internal/auth"
@@ -126,7 +127,7 @@ func (s *Server) Run(port int) {
 	}()
 
 	log.Info().Msgf("server serving on port %d", port)
-	if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatal().Err(err).Msgf("could not listen on %s", addr)
 	}
 

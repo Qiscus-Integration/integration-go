@@ -75,7 +75,7 @@ func (s *Server) Run(port int) {
 	h := chainMiddleware(
 		s.router,
 		recoverHandler,
-		loggerHandler(func(w http.ResponseWriter, r *http.Request) bool { return r.URL.Path == "/" }),
+		loggerHandler(func(w http.ResponseWriter, r *http.Request) bool { return r.URL.Path == "/health" }),
 		realIPHandler,
 		requestIDHandler,
 		corsHandler,

@@ -18,7 +18,7 @@ func TestGetRoomByID(t *testing.T) {
 	mockRepo := mocks.NewRepository(t)
 
 	t.Run("error get room", func(t *testing.T) {
-		mockRepo.On("FindByID", mock.Anything, mock.AnythingOfType("int64")).Return(nil, errUnexpected).Once()
+		mockRepo.EXPECT().FindByID(mock.Anything, mock.AnythingOfType("int64")).Return(nil, errUnexpected).Once()
 
 		svc := Service{repo: mockRepo}
 		room, err := svc.GetRoomByID(context.Background(), 1)
@@ -28,7 +28,7 @@ func TestGetRoomByID(t *testing.T) {
 	})
 
 	t.Run("error get room - not found", func(t *testing.T) {
-		mockRepo.On("FindByID", mock.Anything, mock.AnythingOfType("int64")).Return(nil, gorm.ErrRecordNotFound).Once()
+		mockRepo.EXPECT().FindByID(mock.Anything, mock.AnythingOfType("int64")).Return(nil, gorm.ErrRecordNotFound).Once()
 
 		svc := Service{repo: mockRepo}
 		room, err := svc.GetRoomByID(context.Background(), 1)
@@ -38,7 +38,7 @@ func TestGetRoomByID(t *testing.T) {
 	})
 
 	t.Run("success get room", func(t *testing.T) {
-		mockRepo.On("FindByID", mock.Anything, mock.AnythingOfType("int64")).Return(&entity.Room{ID: 1}, nil).Once()
+		mockRepo.EXPECT().FindByID(mock.Anything, mock.AnythingOfType("int64")).Return(&entity.Room{ID: 1}, nil).Once()
 
 		svc := Service{repo: mockRepo}
 		room, err := svc.GetRoomByID(context.Background(), 1)

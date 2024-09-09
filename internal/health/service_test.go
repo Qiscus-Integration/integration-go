@@ -56,8 +56,8 @@ func TestCheck(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := mocks.NewRepository(t)
-			mockRepo.On("CheckDatabase", mock.Anything).Return(tt.mockDatabaseError).Once()
-			mockRepo.On("CheckRedis", mock.Anything).Return(tt.mockRedisError).Once()
+			mockRepo.EXPECT().CheckDatabase(mock.Anything).Return(tt.mockDatabaseError).Once()
+			mockRepo.EXPECT().CheckRedis(mock.Anything).Return(tt.mockRedisError).Once()
 
 			svc := &Service{repo: mockRepo}
 			healthComponent, isHealthy := svc.Check(context.Background())

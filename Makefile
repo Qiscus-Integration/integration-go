@@ -21,7 +21,7 @@ run/live:
 
 .PHONY: test
 test:
-	go test -race -coverprofile=/tmp/coverage.out ./...
+	go test -race -coverprofile=./coverage.out ./...
 
 .PHONY: generate
 generate:

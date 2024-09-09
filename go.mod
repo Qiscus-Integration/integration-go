@@ -1,6 +1,6 @@
 module integration-go
 
-go 1.22.3
+go 1.23.0
 
 require (
 	github.com/caarlos0/env/v9 v9.0.0

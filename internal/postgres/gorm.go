@@ -11,7 +11,7 @@ import (
 
 func NewGORM(c config.Database) *gorm.DB {
 	db, err := gorm.Open(postgres.Open(c.DataSourceName()), &gorm.Config{
-		Logger: NewLogLevel(c.LogMode),
+		Logger: NewLogLevel(c.LogLevel),
 	})
 
 	if err != nil {

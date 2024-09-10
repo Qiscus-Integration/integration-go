@@ -13,10 +13,10 @@ type Logger struct {
 	Level zerolog.Level
 }
 
-func NewLogLevel(mode string) Logger {
+func NewLogLevel(level string) Logger {
 	l := Logger{}
 
-	switch mode {
+	switch level {
 	case "info":
 		l.Level = zerolog.InfoLevel
 	case "warn":

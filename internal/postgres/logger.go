@@ -11,6 +11,7 @@ import (
 
 type Logger struct {
 	Level zerolog.Level
+	Log   zerolog.Logger
 }
 
 func NewLogLevel(level string) Logger {
@@ -29,6 +30,7 @@ func NewLogLevel(level string) Logger {
 		l.Level = zerolog.Disabled
 	}
 
+	l.Log = log.Level(l.Level)
 	return l
 }
 
@@ -38,24 +40,27 @@ func (l Logger) LogMode(level logger.LogLevel) logger.Interface {
 }
 
 func (l Logger) Error(ctx context.Context, msg string, opts ...interface{}) {
-	if l.Level > zerolog.ErrorLevel {
-		return
+	ze := l.Log.Error()
+	if ctx != nil {
+		ze = ze.Ctx(ctx)
 	}
-	log.Ctx(ctx).Error().Msgf(msg, opts...)
+	ze.Msgf(msg, opts...)
 }
 
 func (l Logger) Warn(ctx context.Context, msg string, opts ...interface{}) {
-	if l.Level > zerolog.WarnLevel {
-		return
+	ze := l.Log.Warn()
+	if ctx != nil {
+		ze = ze.Ctx(ctx)
 	}
-	log.Ctx(ctx).Warn().Msgf(msg, opts...)
+	ze.Msgf(msg, opts...)
 }
 
 func (l Logger) Info(ctx context.Context, msg string, opts ...interface{}) {
-	if l.Level > zerolog.InfoLevel {
-		return
+	ze := l.Log.Info()
+	if ctx != nil {
+		ze = ze.Ctx(ctx)
 	}
-	log.Ctx(ctx).Info().Msgf(msg, opts...)
+	ze.Msgf(msg, opts...)
 }
 
 func (l Logger) Trace(ctx context.Context, begin time.Time, f func() (string, int64), err error) {

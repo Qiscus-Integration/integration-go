@@ -8,7 +8,7 @@
 
 The Qiscus Integration team's Go project boilerplate is designed to speed up application development and ensure consistency across all integration projects. By providing a standardized structure and set of guidelines, this boilerplate makes it easier for developers to understand, review, and maintain projects. By using this boilerplate, developers can ensure that all integration projects follow a consistent structure and coding style, making it easier to onboard new team members and maintain projects in the long term.
 
-This boilerplate is used to standardize the directory structure for projects of medium to large complexity or with the potential for it. However, for other cases that only handle one or a few processes, it is not necessary to implement this boilerplate in order to avoid over-abstraction. For example, you can use a single file like main.go or a flat architecture instead.
+This boilerplate is used to standardize the directory structure for projects of medium to large complexity or with the potential for it. However, **for other cases that only handle one or a few processes, it is not necessary to implement this boilerplate** in order to avoid over-abstraction. For example, you can use a single file like main.go or a flat architecture where all components such as handlers, services, and repositories are placed in a single directory for simplicity and ease of navigation. Here’s a repository that implements this kind of flat structure: [Repo](https://bitbucket.org/qiscus/panin/src/main/).
 
 One significant change from the [v1](https://bitbucket.org/qiscus/integration-go/src/v1/) is moving away from grouping code by function and, instead, organizing it by module. This approach offers several advantages:
 

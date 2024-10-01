@@ -33,33 +33,28 @@ func NewLogLevel(level string) Logger {
 	}
 }
 
+func (l Logger) logWithCtx(ctx context.Context, level zerolog.Level) *zerolog.Event {
+	if ctx != nil {
+		return log.Ctx(ctx).WithLevel(level)
+	}
+	return l.Log.WithLevel(level)
+}
+
 // currently we don't use this function, because Level already defined at struct Logger
 func (l Logger) LogMode(level logger.LogLevel) logger.Interface {
 	return l
 }
 
 func (l Logger) Error(ctx context.Context, msg string, opts ...interface{}) {
-	ze := l.Log.Error()
-	if ctx != nil {
-		ze = ze.Ctx(ctx)
-	}
-	ze.Msgf(msg, opts...)
+	l.logWithCtx(ctx, l.Level).Msgf(msg, opts...)
 }
 
 func (l Logger) Warn(ctx context.Context, msg string, opts ...interface{}) {
-	ze := l.Log.Warn()
-	if ctx != nil {
-		ze = ze.Ctx(ctx)
-	}
-	ze.Msgf(msg, opts...)
+	l.logWithCtx(ctx, l.Level).Msgf(msg, opts...)
 }
 
 func (l Logger) Info(ctx context.Context, msg string, opts ...interface{}) {
-	ze := l.Log.Info()
-	if ctx != nil {
-		ze = ze.Ctx(ctx)
-	}
-	ze.Msgf(msg, opts...)
+	l.logWithCtx(ctx, l.Level).Msgf(msg, opts...)
 }
 
 func (l Logger) Trace(ctx context.Context, begin time.Time, f func() (string, int64), err error) {
@@ -67,11 +62,10 @@ func (l Logger) Trace(ctx context.Context, begin time.Time, f func() (string, in
 		return
 	}
 
-	zl := log.Ctx(ctx)
-	var ze *zerolog.Event = zl.WithLevel(l.Level)
+	var ze *zerolog.Event = l.logWithCtx(ctx, l.Level)
 
 	if err != nil {
-		ze = zl.Err(err)
+		ze = ze.Err(err)
 	}
 
 	sql, rows := f()

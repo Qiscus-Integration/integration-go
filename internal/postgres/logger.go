@@ -15,23 +15,22 @@ type Logger struct {
 }
 
 func NewLogLevel(level string) Logger {
-	l := Logger{}
-
+	lvl := zerolog.Disabled
 	switch level {
 	case "info":
-		l.Level = zerolog.InfoLevel
+		lvl = zerolog.InfoLevel
 	case "warn":
-		l.Level = zerolog.WarnLevel
+		lvl = zerolog.WarnLevel
 	case "debug":
-		l.Level = zerolog.DebugLevel
+		lvl = zerolog.DebugLevel
 	case "error":
-		l.Level = zerolog.ErrorLevel
-	default:
-		l.Level = zerolog.Disabled
+		lvl = zerolog.ErrorLevel
 	}
 
-	l.Log = log.Level(l.Level)
-	return l
+	return Logger{
+		Log:   log.Level(lvl),
+		Level: lvl,
+	}
 }
 
 // currently we don't use this function, because Level already defined at struct Logger

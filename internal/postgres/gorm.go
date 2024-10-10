@@ -7,12 +7,11 @@ import (
 	"github.com/rs/zerolog/log"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 func NewGORM(c config.Database) *gorm.DB {
 	db, err := gorm.Open(postgres.Open(c.DataSourceName()), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
+		Logger: NewLogLevel(c.LogLevel),
 	})
 
 	if err != nil {

@@ -39,6 +39,8 @@ DATABASE_PORT=
 DATABASE_USER=
 DATABASE_PASSWORD=
 DATABASE_NAME=
+#Database Log Level: info, warn, debug, error. by default database log are disabled
+DATABASE_LOG_LEVEL=
 REDIS_URL=
 QISCUS_APP_ID=
 QISCUS_SECRET_KEY=

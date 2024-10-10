@@ -2,9 +2,9 @@ package cron
 
 import (
 	"context"
-	"fmt"
 	"integration-go/internal/client"
 	"integration-go/internal/config"
+	"integration-go/internal/postgres"
 	"integration-go/internal/qismo"
 	"integration-go/internal/resolver"
 	"integration-go/internal/room"
@@ -13,37 +13,12 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 func NewServer() *Server {
 	cfg := config.Load()
-	dsn := fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=disable",
-		cfg.Database.Host,
-		cfg.Database.Port,
-		cfg.Database.User,
-		cfg.Database.Name,
-		cfg.Database.Password,
-	)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
-	})
-
-	if err != nil {
-		log.Fatal().Err(err).Msg("unable to open db connection")
-	}
-
-	sqlDB, err := db.DB()
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to get sql db")
-	}
-
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(100)
-	sqlDB.SetConnMaxLifetime(time.Hour)
+	db := postgres.NewGORM(cfg.Database)
 
 	client := client.New()
 	qismo := qismo.New(client, cfg.Qiscus.Omnichannel.URL, cfg.Qiscus.AppID, cfg.Qiscus.SecretKey)

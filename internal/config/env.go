@@ -33,6 +33,7 @@ type Database struct {
 	User     string `env:"DATABASE_USER"`
 	Password string `env:"DATABASE_PASSWORD"`
 	Name     string `env:"DATABASE_NAME"`
+	LogLevel  string `env:"DATABASE_LOG_LEVEL"`
 }
 
 func (d Database) DataSourceName() string {

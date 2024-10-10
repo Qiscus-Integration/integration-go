@@ -7,7 +7,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-//go:generate mockery --case snake --name Repository
+//go:generate mockery --with-expecter --case snake --name Repository
 type Repository interface {
 	CheckDatabase(ctx context.Context) error
 	CheckRedis(ctx context.Context) error

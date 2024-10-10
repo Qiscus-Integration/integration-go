@@ -9,13 +9,13 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-//go:generate mockery --case snake --name RoomRepository
+//go:generate mockery --with-expecter --case snake --name RoomRepository
 type RoomRepository interface {
 	Fetch(ctx context.Context) ([]*entity.Room, error)
 	DeleteBy(ctx context.Context, query map[string]interface{}) error
 }
 
-//go:generate mockery --case snake --name Omnichannel
+//go:generate mockery --with-expecter --case snake --name Omnichannel
 type Omnichannel interface {
 	ResolvedRoom(ctx context.Context, roomID string) error
 }

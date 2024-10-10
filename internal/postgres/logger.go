@@ -71,7 +71,7 @@ func (l Logger) Trace(ctx context.Context, begin time.Time, f func() (string, in
 	sql, rows := f()
 	ze.Str("sql", sql).
 		Int64("rows", rows).
-		Str("time_elapsed", time.Since(begin).String()).
+		Float64("latency", float64(time.Since(begin).Nanoseconds()/1e4)/100.0).
 		Msg("database query")
 
 	return

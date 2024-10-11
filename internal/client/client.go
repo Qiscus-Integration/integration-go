@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -10,13 +11,20 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/rs/zerolog/log"
 )
 
 type Client struct {
 	HTTPClient *http.Client
+	Debug      bool
 }
 
-func defaultHTTPClient() *http.Client {
+var (
+	defaultDebug      = false
+	defaultHTTPClient = newHTTPClient()
+)
+
+func newHTTPClient() *http.Client {
 	retryClient := retryablehttp.NewClient()
 	retryClient.RetryMax = 3
 	retryClient.Logger = nil
@@ -27,7 +35,8 @@ func defaultHTTPClient() *http.Client {
 
 func New() *Client {
 	return &Client{
-		HTTPClient: defaultHTTPClient(),
+		HTTPClient: defaultHTTPClient,
+		Debug:      defaultDebug,
 	}
 }
 
@@ -40,12 +49,20 @@ func (c *Client) Call(ctx context.Context, method, url string, body io.Reader, h
 		}
 	}
 
+	var reqBody []byte
+	if req.Body != nil {
+		reqBody, _ = io.ReadAll(req.Body)
+		req.Body = io.NopCloser(bytes.NewBuffer(reqBody))
+	}
+
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
 	for key, value := range headers {
 		req.Header.Set(key, value)
 	}
+
+	start := time.Now()
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
@@ -56,6 +73,7 @@ func (c *Client) Call(ctx context.Context, method, url string, body io.Reader, h
 	}
 
 	defer resp.Body.Close()
+	latency := time.Since(start)
 
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -64,6 +82,16 @@ func (c *Client) Call(ctx context.Context, method, url string, body io.Reader, h
 			StatusCode: resp.StatusCode,
 			RawError:   err,
 		}
+	}
+
+	if c.Debug {
+		log.Ctx(ctx).Info().
+			Str("method", resp.Request.Method).
+			Str("url", resp.Request.URL.String()).
+			Str("body", string(reqBody)).
+			Int("status_code", resp.StatusCode).
+			Float64("latency", float64(latency.Nanoseconds()/1e4)/100.0).
+			Msg("outbound request")
 	}
 
 	if resp.StatusCode >= 400 {

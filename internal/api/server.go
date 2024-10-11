@@ -31,7 +31,7 @@ func NewServer() *Server {
 	rdb := redis.New(cfg.Redis.URL)
 
 	client := client.New()
-	// client.Debug = true
+	// client.DebugMode = true
 
 	qismo := qismo.New(client, cfg.Qiscus.Omnichannel.URL, cfg.Qiscus.AppID, cfg.Qiscus.SecretKey)
 

@@ -16,11 +16,11 @@ import (
 
 type Client struct {
 	HTTPClient *http.Client
-	Debug      bool
+	DebugMode  bool
 }
 
 var (
-	defaultDebug      = false
+	defaultDebugMode  = false
 	defaultHTTPClient = newHTTPClient()
 )
 
@@ -36,7 +36,7 @@ func newHTTPClient() *http.Client {
 func New() *Client {
 	return &Client{
 		HTTPClient: defaultHTTPClient,
-		Debug:      defaultDebug,
+		DebugMode:  defaultDebugMode,
 	}
 }
 
@@ -84,7 +84,7 @@ func (c *Client) Call(ctx context.Context, method, url string, body io.Reader, h
 		}
 	}
 
-	if c.Debug {
+	if c.DebugMode {
 		log.Ctx(ctx).Info().
 			Str("method", resp.Request.Method).
 			Str("url", resp.Request.URL.String()).

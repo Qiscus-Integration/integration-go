@@ -1,9 +1,5 @@
 # Integration Boilerplate (Golang)
 
-### Changelog
-
-- **v1**: checkout to the [v1 branch](https://bitbucket.org/qiscus/integration-go/src/v1/) - Layered architecture (delivery, usecase, repository) or driven by tech
-
 ### Overview
 
 The Qiscus Integration team's Go project boilerplate is designed to speed up application development and ensure consistency across all integration projects. By providing a standardized structure and set of guidelines, this boilerplate makes it easier for developers to understand, review, and maintain projects. By using this boilerplate, developers can ensure that all integration projects follow a consistent structure and coding style, making it easier to onboard new team members and maintain projects in the long term.

@@ -51,7 +51,7 @@ To run the project locally, follow these steps:
 - Navigate to the directory
 - Format code and tidy modfile: `make tidy`
 - Run test: `make test`, make sure that all tests are passing
-- Run the server: `make run bin=server`, or run the application with reloading on file changes with: `make run/live bin=server`. You can also apply this to the cron application by changing the parameter to `bin=cron`
+- Run the server: `make run bin=api`, or run the application with reloading on file changes with: `make run/live bin=api`. You can also apply this to the cron application by changing the parameter to `bin=cron`
 - The backend server will be accessible at `http://localhost:8080`
 - You can find another usefull commands in `Makefile`
 

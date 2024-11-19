@@ -71,9 +71,10 @@ err := s.omni.AssignAgent(ctx, agentID, roomID)
 if err != nil {
     var cerr *client.Error
     if errors.As(err, &cerr) {
-        fmt.Println(cerr.Message)     // General error message
-        fmt.Println(cerr.StatusCode)  // HTTP status code e.g: 400, 401 etc.
-        fmt.Println(cerr.RawError)    // Raw Go error object
+        fmt.Println(cerr.Message)     		// General error message
+        fmt.Println(cerr.StatusCode)  		// HTTP status code e.g: 400, 401 etc.
+        fmt.Println(cerr.RawError)    		// Raw Go error object
+        fmt.Println(cerr.RawAPIResponse)  // Raw API response body in byte
     }
 }
 

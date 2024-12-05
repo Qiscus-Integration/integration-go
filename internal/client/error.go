@@ -3,9 +3,10 @@ package client
 import "fmt"
 
 type Error struct {
-	Message    string
-	StatusCode int
-	RawError   error
+	Message        string
+	StatusCode     int
+	RawError       error
+	RawAPIResponse []byte
 }
 
 // Error returns error message.

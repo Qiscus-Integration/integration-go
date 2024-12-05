@@ -95,24 +95,28 @@ func (c *Client) Call(ctx context.Context, method, url string, body io.Reader, h
 	}
 
 	if resp.StatusCode >= 400 {
+		rawErr := fmt.Errorf("%s %s returned error %d response: %s",
+			resp.Request.Method,
+			resp.Request.URL,
+			resp.StatusCode,
+			string(responseBody),
+		)
+
 		return &Error{
-			Message:    "http client error",
-			StatusCode: resp.StatusCode,
-			RawError: fmt.Errorf(
-				"%s %s returned error %d response: %s",
-				resp.Request.Method,
-				resp.Request.URL,
-				resp.StatusCode,
-				string(responseBody)),
+			Message:        "http client error",
+			StatusCode:     resp.StatusCode,
+			RawError:       rawErr,
+			RawAPIResponse: responseBody,
 		}
 	}
 
 	if response != nil {
 		if err = json.Unmarshal(responseBody, response); err != nil {
 			return &Error{
-				Message:    fmt.Sprintf("unable to unmarshaling body response: %s", err.Error()),
-				StatusCode: resp.StatusCode,
-				RawError:   err,
+				Message:        fmt.Sprintf("unable to unmarshaling body response: %s", err.Error()),
+				StatusCode:     resp.StatusCode,
+				RawError:       err,
+				RawAPIResponse: responseBody,
 			}
 		}
 	}

@@ -26,22 +26,7 @@ Create tagging and storing room data in the database when a user initiates a cha
 
 ### Environment Variables
 
-To run this project, you will need to add the following environment variables to your `.env` file
-
-```
-APP_SECRET_KEY=
-DATABASE_HOST=
-DATABASE_PORT=
-DATABASE_USER=
-DATABASE_PASSWORD=
-DATABASE_NAME=
-#Database Log Level: info, warn, debug, error. by default database log are disabled
-DATABASE_LOG_LEVEL=
-REDIS_URL=
-QISCUS_APP_ID=
-QISCUS_SECRET_KEY=
-QISCUS_OMNICHANNEL_URL=
-```
+Copy the `.env.example` file to `.env` in the root of your project directory.
 
 ### Run Locally
 

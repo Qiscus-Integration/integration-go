@@ -1,4 +1,3 @@
-image: amazon/aws-cli
 pipelines:
   branches:
     staging:
@@ -18,12 +17,27 @@ pipelines:
           services:
             - docker
           script:
-            - export REPO_NAME=registry-stage.qiscus.io/integration/
-            - export PROJECT_NAME=integration-go-stag
-            - export IMAGE_TAG="${REPO_NAME}""${PROJECT_NAME}":"${BITBUCKET_BUILD_NUMBER}"
-            - docker build -t ${IMAGE_TAG} .
+            - export REGISTRY=registry-stage.qiscus.io/integration/
+            - export PROJECT="${BITBUCKET_REPO_SLUG}-${BITBUCKET_BRANCH}"
+            - export IMAGE="${REGISTRY}${PROJECT}"
+            - export DOCKER_BUILDKIT=1
+            - docker build -t $IMAGE:$BITBUCKET_BUILD_NUMBER .
             - echo ${HARBOR_PASSWORD} | docker login registry-stage.qiscus.io --username ${HARBOR_USER} --password-stdin
-            - docker push "${IMAGE_TAG}"
-            - echo ${IMAGE_TAG}
+            - docker push $IMAGE:$BITBUCKET_BUILD_NUMBER
+            - echo $IMAGE:$BITBUCKET_BUILD_NUMBER
+      - step:
+          name: Update Central Application
+          trigger: manual
+          image:
+            name: registry-stage.qiscus.io/integration/central-command:stable
+            username: $HARBOR_USER
+            password: $HARBOR_PASSWORD
+          deployment: staging
+          script:
+            - export REGISTRY=registry-stage.qiscus.io/integration/
+            - export PROJECT="${BITBUCKET_REPO_SLUG}-${BITBUCKET_BRANCH}"
+            - export IMAGE="${REGISTRY}${PROJECT}"
+            - chmod +x /app/central
+            - /app/central -n $PROJECT -i $IMAGE:$BITBUCKET_BUILD_NUMBER
 options:
   docker: true

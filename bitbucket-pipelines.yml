@@ -4,16 +4,16 @@ pipelines:
       - step:
           name: Test
           runs-on:
-            - "self.hosted"
-            - "linux"
+            - self.hosted
+            - linux
           image: golang:1.22.3
           script:
             - make test
       - step:
           name: Build and Publish
           runs-on:
-            - "self.hosted"
-            - "linux"
+            - self.hosted
+            - linux
           services:
             - docker
           script:
@@ -27,6 +27,9 @@ pipelines:
             - echo $IMAGE:$BITBUCKET_BUILD_NUMBER
       - step:
           name: Update Central Application
+          runs-on:
+            - self.hosted
+            - linux
           trigger: manual
           image:
             name: registry-stage.qiscus.io/integration/central-command:stable

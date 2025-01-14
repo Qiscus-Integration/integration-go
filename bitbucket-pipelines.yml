@@ -5,15 +5,15 @@ pipelines:
           name: Test
           runs-on:
             - self.hosted
-            - linux
-          image: golang:1.22.3
+            - linux.arm64
+          image: golang:1.23.0
           script:
             - make test
       - step:
           name: Build and Publish
           runs-on:
             - self.hosted
-            - linux
+            - linux.arm64
           services:
             - docker
           script:
@@ -29,7 +29,7 @@ pipelines:
           name: Update Central Application
           runs-on:
             - self.hosted
-            - linux
+            - linux.arm64
           trigger: manual
           image:
             name: registry-stage.qiscus.io/integration/central-command:stable

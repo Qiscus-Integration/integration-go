@@ -1,3 +1,4 @@
+image: amazon/aws-cli
 pipelines:
   branches:
     staging:
@@ -5,15 +6,15 @@ pipelines:
           name: Test
           runs-on:
             - self.hosted
-            - linux
-          image: golang:1.22.3
+            - linux.arm64
+          image: golang:1.23.0
           script:
             - make test
       - step:
           name: Build and Publish
           runs-on:
             - self.hosted
-            - linux
+            - linux.arm64
           services:
             - docker
           script:
@@ -21,7 +22,7 @@ pipelines:
             - export PROJECT="${BITBUCKET_REPO_SLUG}-${BITBUCKET_BRANCH}"
             - export IMAGE="${REGISTRY}${PROJECT}"
             - export DOCKER_BUILDKIT=1
-            - docker build -t $IMAGE:$BITBUCKET_BUILD_NUMBER .
+            - docker build -t $IMAGE:$BITBUCKET_BUILD_NUMBER --platform linux/arm64 .
             - echo ${HARBOR_PASSWORD} | docker login registry-stage.qiscus.io --username ${HARBOR_USER} --password-stdin
             - docker push $IMAGE:$BITBUCKET_BUILD_NUMBER
             - echo $IMAGE:$BITBUCKET_BUILD_NUMBER

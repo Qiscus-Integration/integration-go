@@ -26,7 +26,7 @@ Create tagging and storing room data in the database when a user initiates a cha
 
 ### Environment Variables
 
-Copy the `.env.example` file to `.env` in the root of your project directory.
+Set up the environment file by copying .env.example: `make setup-env`
 
 ### Run Locally
 

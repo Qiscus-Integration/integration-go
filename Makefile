@@ -1,3 +1,17 @@
+.PHONY: setup-env
+setup-env:
+	@if [ ! -f .env ]; then \
+	if [ -f .env.example ]; then \
+		cp .env.example .env; \
+		echo ".env file created successfully!"; \
+	else \
+		echo "Error: .env.example file not found"; \
+		exit 1; \
+	fi; \
+	else \
+		echo ".env file already exists. No action taken."; \
+	fi
+
 .PHONY: tidy
 tidy:
 	go fmt ./...

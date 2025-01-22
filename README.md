@@ -26,7 +26,15 @@ Create tagging and storing room data in the database when a user initiates a cha
 
 ### Environment Variables
 
-Set up the environment file by copying .env.example: `cp .env.example .env`
+Set up the environment file by copying .env.example:
+
+Mac/Linux:
+`cp .env.example .env`
+
+Windows:
+`copy .env.example .env`
+
+Alternatively, you can create a copy of `.env.example` and rename it to `.env` in your project's root directory
 
 ### Run Locally
 

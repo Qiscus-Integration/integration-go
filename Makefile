@@ -22,13 +22,11 @@ run/live:
 .PHONY: test test/coverage
 
 test:
-	go test -race ./...
+	go test $$(go list ./... | grep -v 'test\|mocks') -race -coverprofile=./coverage.out
 
-test/coverage:
+test/coverage: test
 	@THRESHOLD=25.0; \
-	go test $(shell go list ./... | grep -v 'test\|mocks') -race -coverprofile=./coverage.out; \
 	COVERAGE_OUTPUT=$$(go tool cover -func=coverage.out); \
-	echo "$$COVERAGE_OUTPUT"; \
 	COVERAGE=$$(echo "$$COVERAGE_OUTPUT" | awk '/total:/ {print $$3}' | sed 's/%//'); \
 	if [ $$(awk "BEGIN {if ($$COVERAGE < $$THRESHOLD) print 1; else print 0}") -eq 1 ]; then \
 		echo "Test coverage ($$COVERAGE%) is below the required threshold ($$THRESHOLD%). Please add more tests!"; \

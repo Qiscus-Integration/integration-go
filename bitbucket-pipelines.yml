@@ -9,7 +9,7 @@ pipelines:
             - linux.arm64
           image: golang:1.23.0
           script:
-            - make test/cover
+            - make test/coverage
       - step:
           name: Build and Publish
           runs-on:

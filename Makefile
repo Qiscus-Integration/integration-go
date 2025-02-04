@@ -19,14 +19,14 @@ run/live:
 		--build.include_ext "go, tpl, tmpl, html, css, scss, js, ts, sql, jpeg, jpg, gif, png, bmp, svg, webp, ico" \
 		--misc.clean_on_exit "true"
 
-.PHONY: test test/cover
+.PHONY: test test/coverage
 
 test:
 	go test -race ./...
 
-test/cover:
+test/coverage:
 	@THRESHOLD=25.0; \
-	go test -race -coverprofile=./coverage.out ./...; \
+	go test $(shell go list ./... | grep -v 'test\|mocks') -race -coverprofile=./coverage.out; \
 	COVERAGE_OUTPUT=$$(go tool cover -func=coverage.out); \
 	echo "$$COVERAGE_OUTPUT"; \
 	COVERAGE=$$(echo "$$COVERAGE_OUTPUT" | awk '/total:/ {print $$3}' | sed 's/%//'); \

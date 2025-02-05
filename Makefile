@@ -19,9 +19,19 @@ run/live:
 		--build.include_ext "go, tpl, tmpl, html, css, scss, js, ts, sql, jpeg, jpg, gif, png, bmp, svg, webp, ico" \
 		--misc.clean_on_exit "true"
 
-.PHONY: test
+.PHONY: test test/coverage
+
 test:
-	go test -race -coverprofile=./coverage.out ./...
+	go test $$(go list ./... | grep -v 'test\|mocks') -race -coverprofile=./coverage.out
+
+test/coverage: test
+	@THRESHOLD=25.0; \
+	COVERAGE_OUTPUT=$$(go tool cover -func=coverage.out); \
+	COVERAGE=$$(echo "$$COVERAGE_OUTPUT" | awk '/total:/ {print $$3}' | sed 's/%//'); \
+	if [ $$(awk "BEGIN {if ($$COVERAGE < $$THRESHOLD) print 1; else print 0}") -eq 1 ]; then \
+		echo "Test coverage ($$COVERAGE%) is below the required threshold ($$THRESHOLD%). Please add more tests!"; \
+		exit 1; \
+	fi
 
 .PHONY: generate
 generate:

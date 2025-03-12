@@ -1,5 +1,23 @@
 image: amazon/aws-cli
 pipelines:
+  pull-requests:
+    "**":
+      - step:
+          name: Build & Run PR Agent
+          runs-on:
+            - self.hosted
+            - linux
+          image: python:3.10
+          services:
+            - docker
+          script:
+            - docker pull codiumai/pr-agent:latest
+            - docker tag codiumai/pr-agent:latest pr-agent-cached
+            - docker run -e CONFIG.GIT_PROVIDER=bitbucket -e GOOGLE_AI_STUDIO.GEMINI_API_KEY=$GEMINI_API_KEY -e BITBUCKET.BEARER_TOKEN=$BITBUCKET_BEARER_TOKEN pr-agent-cached --pr_url=https://bitbucket.org/$BITBUCKET_WORKSPACE/$BITBUCKET_REPO_SLUG/pull-requests/$BITBUCKET_PR_ID describe
+            - docker run -e CONFIG.GIT_PROVIDER=bitbucket -e GOOGLE_AI_STUDIO.GEMINI_API_KEY=$GEMINI_API_KEY -e BITBUCKET.BEARER_TOKEN=$BITBUCKET_BEARER_TOKEN pr-agent-cached --pr_url=https://bitbucket.org/$BITBUCKET_WORKSPACE/$BITBUCKET_REPO_SLUG/pull-requests/$BITBUCKET_PR_ID review
+            - docker run -e CONFIG.GIT_PROVIDER=bitbucket -e GOOGLE_AI_STUDIO.GEMINI_API_KEY=$GEMINI_API_KEY -e BITBUCKET.BEARER_TOKEN=$BITBUCKET_BEARER_TOKEN pr-agent-cached --pr_url=https://bitbucket.org/$BITBUCKET_WORKSPACE/$BITBUCKET_REPO_SLUG/pull-requests/$BITBUCKET_PR_ID improve
+          caches:
+            - docker
   branches:
     staging:
       - step:

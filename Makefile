@@ -28,8 +28,9 @@ test/coverage: test
 	@THRESHOLD=25.0; \
 	COVERAGE_OUTPUT=$$(go tool cover -func=coverage.out); \
 	COVERAGE=$$(echo "$$COVERAGE_OUTPUT" | awk '/total:/ {print $$3}' | sed 's/%//'); \
+	echo "Total test coverage: $$COVERAGE%"; \
 	if [ $$(awk "BEGIN {if ($$COVERAGE < $$THRESHOLD) print 1; else print 0}") -eq 1 ]; then \
-		echo "Test coverage ($$COVERAGE%) is below the required threshold ($$THRESHOLD%). Please add more tests!"; \
+		echo "Test coverage is below the required threshold ($$THRESHOLD%). Please add more tests!"; \
 		exit 1; \
 	fi
 

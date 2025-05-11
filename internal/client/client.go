@@ -40,7 +40,7 @@ func New() *Client {
 	}
 }
 
-func (c *Client) Call(ctx context.Context, method, url string, body io.Reader, headers map[string]string, response interface{}) error {
+func (c *Client) Call(ctx context.Context, method, url string, body io.Reader, headers map[string]string, response any) error {
 	req, err := http.NewRequestWithContext(ctx, strings.ToUpper(method), url, body)
 	if err != nil {
 		return &Error{

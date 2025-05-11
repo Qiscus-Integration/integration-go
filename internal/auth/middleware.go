@@ -21,10 +21,7 @@ func (m *middleware) StaticToken(next http.Handler) http.Handler {
 
 		tokenStr := r.Header.Get("Authorization")
 		if tokenStr != m.secretKey {
-			resp.WriteJSON(w, http.StatusUnauthorized, resp.HTTPError{
-				StatusCode: http.StatusUnauthorized,
-				Message:    "Unauthorized",
-			})
+			resp.WriteJSONFromError(w, &authError{authErrorUnauthorized})
 			return
 		}
 

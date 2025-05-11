@@ -42,7 +42,7 @@ func (r *repo) FindByID(ctx context.Context, id int64) (*entity.Room, error) {
 	return &room, nil
 }
 
-func (r *repo) DeleteBy(ctx context.Context, query map[string]interface{}) error {
+func (r *repo) DeleteBy(ctx context.Context, query map[string]any) error {
 	err := r.db.WithContext(ctx).Delete(&entity.Room{}, query).Error
 	return err
 }

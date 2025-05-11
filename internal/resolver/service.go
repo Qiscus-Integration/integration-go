@@ -12,7 +12,7 @@ import (
 //go:generate mockery --with-expecter --case snake --name RoomRepository
 type RoomRepository interface {
 	Fetch(ctx context.Context) ([]*entity.Room, error)
-	DeleteBy(ctx context.Context, query map[string]interface{}) error
+	DeleteBy(ctx context.Context, query map[string]any) error
 }
 
 //go:generate mockery --with-expecter --case snake --name Omnichannel
@@ -50,7 +50,7 @@ func (s *Service) ResolvedOmnichannelRoom(ctx context.Context) error {
 			continue
 		}
 
-		err := s.roomRepo.DeleteBy(ctx, map[string]interface{}{
+		err := s.roomRepo.DeleteBy(ctx, map[string]any{
 			"multichannel_room_id": room.MultichannelRoomID,
 		})
 

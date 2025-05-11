@@ -33,7 +33,7 @@ func (q *Qismo) headers() map[string]string {
 
 func (q *Qismo) CreateRoomTag(ctx context.Context, roomID string, tag string) error {
 	url := fmt.Sprintf("%s/api/v1/room_tag/create", q.url)
-	payload, _ := json.Marshal(map[string]interface{}{
+	payload, _ := json.Marshal(map[string]any{
 		"room_id": roomID,
 		"tag":     tag,
 	})
@@ -44,7 +44,7 @@ func (q *Qismo) CreateRoomTag(ctx context.Context, roomID string, tag string) er
 
 func (q *Qismo) ResolvedRoom(ctx context.Context, roomID string) error {
 	url := fmt.Sprintf("%s/api/v1/admin/service/mark_as_resolved", q.url)
-	payload, _ := json.Marshal(map[string]interface{}{
+	payload, _ := json.Marshal(map[string]any{
 		"room_id": roomID,
 	})
 

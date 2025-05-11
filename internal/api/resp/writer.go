@@ -3,8 +3,10 @@ package resp
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"math"
 	"net/http"
+	"strconv"
 )
 
 type Meta struct {
@@ -14,25 +16,25 @@ type Meta struct {
 }
 
 type DataPaginate struct {
-	Data interface{} `json:"data"`
-	Meta Meta        `json:"meta"`
+	Data any  `json:"data"`
+	Meta Meta `json:"meta"`
 }
 
 type HTTPError struct {
-	StatusCode int    `json:"error_code"`
-	Message    string `json:"error_message"`
+	Message   string `json:"message"`
+	RequestID string `json:"request_id"`
 }
 
 type Empty struct{}
 
-func WriteJSON(w http.ResponseWriter, code int, data interface{}) {
+func WriteJSON(w http.ResponseWriter, code int, data any) {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(code)
 	jsonData, _ := json.Marshal(data)
 	w.Write(jsonData)
 }
 
-func WriteJSONWithPaginate(w http.ResponseWriter, code int, data interface{}, total int, page int, limit int) {
+func WriteJSONWithPaginate(w http.ResponseWriter, code int, data any, total int, page int, limit int) {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(code)
 
@@ -56,14 +58,24 @@ func WriteJSONFromError(w http.ResponseWriter, err error) {
 	msg := "Something went wrong"
 
 	var httpErr interface{ HTTPStatusCode() int }
-	if errors.As(err, &httpErr) {
+
+	switch {
+	case errors.As(err, &httpErr):
 		code = httpErr.HTTPStatusCode()
+		msg = err.Error()
+	case errors.As(err, new(*json.UnmarshalTypeError)),
+		errors.As(err, new(*json.SyntaxError)),
+		errors.Is(err, io.EOF),
+		errors.Is(err, io.ErrUnexpectedEOF),
+		errors.Is(err, strconv.ErrSyntax),
+		errors.Is(err, strconv.ErrRange):
+		code = http.StatusBadRequest
 		msg = err.Error()
 	}
 
 	errResp := HTTPError{
-		StatusCode: code,
-		Message:    msg,
+		Message:   msg,
+		RequestID: w.Header().Get("X-Request-Id"),
 	}
 
 	resp, _ := json.Marshal(errResp)

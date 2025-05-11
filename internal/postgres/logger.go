@@ -45,15 +45,15 @@ func (l Logger) LogMode(level logger.LogLevel) logger.Interface {
 	return l
 }
 
-func (l Logger) Error(ctx context.Context, msg string, opts ...interface{}) {
+func (l Logger) Error(ctx context.Context, msg string, opts ...any) {
 	l.logWithCtx(ctx, l.Level).Msgf(msg, opts...)
 }
 
-func (l Logger) Warn(ctx context.Context, msg string, opts ...interface{}) {
+func (l Logger) Warn(ctx context.Context, msg string, opts ...any) {
 	l.logWithCtx(ctx, l.Level).Msgf(msg, opts...)
 }
 
-func (l Logger) Info(ctx context.Context, msg string, opts ...interface{}) {
+func (l Logger) Info(ctx context.Context, msg string, opts ...any) {
 	l.logWithCtx(ctx, l.Level).Msgf(msg, opts...)
 }
 

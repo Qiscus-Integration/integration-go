@@ -25,11 +25,7 @@ func (h *httpHandler) GetRoomByID(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		resp.WriteJSON(w, http.StatusBadRequest, resp.HTTPError{
-			StatusCode: http.StatusBadRequest,
-			Message:    err.Error(),
-		})
-
+		resp.WriteJSONFromError(w, err)
 		return
 	}
 
@@ -49,11 +45,7 @@ func (h *httpHandler) WebhookQismoNewSession(w http.ResponseWriter, r *http.Requ
 	var req qismo.WebhookNewSessionRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		resp.WriteJSON(w, http.StatusBadRequest, resp.HTTPError{
-			StatusCode: http.StatusBadRequest,
-			Message:    err.Error(),
-		})
-
+		resp.WriteJSONFromError(w, err)
 		return
 	}
 

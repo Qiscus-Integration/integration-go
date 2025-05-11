@@ -135,7 +135,7 @@ func loggerHandler(filter func(w http.ResponseWriter, r *http.Request) bool) fun
 }
 
 func formatReqBody(r *http.Request, data []byte) string {
-	var js map[string]interface{}
+	var js map[string]any
 	if json.Unmarshal(data, &js) != nil {
 		return string(data)
 	}
@@ -214,12 +214,17 @@ func recoverHandler(next http.Handler) http.Handler {
 func requestIDHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestIDHeader := "X-Request-Id"
-		if r.Header.Get(requestIDHeader) == "" {
-			r.Header.Set(requestIDHeader, uuid.NewString())
+		requestID := r.Header.Get(requestIDHeader)
+		if requestID == "" {
+			requestID = uuid.NewString()
+			r.Header.Set(requestIDHeader, requestID)
 		}
 
+		// Set request ID in response header
+		w.Header().Set(requestIDHeader, requestID)
+
 		ctx := log.With().
-			Str("request_id", r.Header.Get(requestIDHeader)).
+			Str("request_id", requestID).
 			Logger().
 			WithContext(r.Context())
 

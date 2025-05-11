@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"integration-go/internal/api/resp"
 	"integration-go/internal/auth"
 	"integration-go/internal/client"
 	"integration-go/internal/config"
@@ -49,15 +48,7 @@ func NewServer() *Server {
 	healthHandler := health.NewHttpHandler(healthSvc)
 
 	r := http.NewServeMux()
-	r.Handle("GET /", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			resp.WriteJSON(w, http.StatusNotFound, "Not Found")
-			return
-		}
-
-		resp.WriteJSON(w, http.StatusOK, "OK")
-	}))
-
+	r.Handle("GET /", http.HandlerFunc(rootHandler))
 	r.Handle("GET /health", http.HandlerFunc(healthHandler.Check))
 	r.Handle("POST /wh/qiscus/omnichannel/new-session", http.HandlerFunc(roomHandler.WebhookQismoNewSession))
 	r.Handle("GET /api/v1/rooms/{id}", authMidd.StaticToken(http.HandlerFunc(roomHandler.GetRoomByID)))
@@ -116,4 +107,14 @@ func (s *Server) Run(port int) {
 	<-done
 	log.Info().Msg("server stopped")
 
+}
+
+func rootHandler(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(http.StatusText(http.StatusOK)))
 }

@@ -60,5 +60,9 @@ pipelines:
             - export IMAGE="${REGISTRY}${PROJECT}"
             - chmod +x /app/central
             - /app/central -n $PROJECT -i $IMAGE:$BITBUCKET_BUILD_NUMBER
+
+            # Optional: Enable this block only if the service has cron jobs
+            # - export PROJECT_CRON="${BITBUCKET_REPO_SLUG}-cron-${BITBUCKET_BRANCH}"
+            # - /app/central -n $PROJECT_CRON -i $IMAGE:$BITBUCKET_BUILD_NUMBER
 options:
   docker: true

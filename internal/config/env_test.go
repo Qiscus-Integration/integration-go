@@ -106,6 +106,7 @@ func TestConfigValidation(t *testing.T) {
 				"DATABASE_USER":          "user",
 				"DATABASE_PASSWORD":      "pass",
 				"DATABASE_NAME":          "dbname",
+				"DATABASE_LOG_LEVEL":     "",
 				"REDIS_URL":              "redis://localhost",
 				"QISCUS_APP_ID":          "appid",
 				"QISCUS_SECRET_KEY":      "secret",

@@ -24,16 +24,16 @@ type Config struct {
 }
 
 type App struct {
-	SecretKey string `env:"APP_SECRET_KEY"`
+	SecretKey string `env:"APP_SECRET_KEY,required"`
 }
 
 type Database struct {
-	Host     string `env:"DATABASE_HOST"`
-	Port     int    `env:"DATABASE_PORT"`
-	User     string `env:"DATABASE_USER"`
-	Password string `env:"DATABASE_PASSWORD"`
-	Name     string `env:"DATABASE_NAME"`
-	LogLevel  string `env:"DATABASE_LOG_LEVEL"`
+	Host     string `env:"DATABASE_HOST,required"`
+	Port     int    `env:"DATABASE_PORT,required"`
+	User     string `env:"DATABASE_USER,required"`
+	Password string `env:"DATABASE_PASSWORD,required"`
+	Name     string `env:"DATABASE_NAME,required"`
+	LogLevel string `env:"DATABASE_LOG_LEVEL,required"`
 }
 
 func (d Database) DataSourceName() string {
@@ -42,15 +42,15 @@ func (d Database) DataSourceName() string {
 }
 
 type Redis struct {
-	URL string `env:"REDIS_URL"`
+	URL string `env:"REDIS_URL,required"`
 }
 
 type Qiscus struct {
-	AppID       string `env:"QISCUS_APP_ID"`
-	SecretKey   string `env:"QISCUS_SECRET_KEY"`
+	AppID       string `env:"QISCUS_APP_ID,required"`
+	SecretKey   string `env:"QISCUS_SECRET_KEY,required"`
 	Omnichannel Omnichannel
 }
 
 type Omnichannel struct {
-	URL string `env:"QISCUS_OMNICHANNEL_URL"`
+	URL string `env:"QISCUS_OMNICHANNEL_URL,required"`
 }

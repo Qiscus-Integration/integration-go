@@ -50,7 +50,13 @@ To run the project locally, follow these steps:
 
 ### Generate Mock from Interface
 
-- Install [Mockery](https://github.com/vektra/mockery)
+- Install [Mockery](https://github.com/vektra/mockery):
+
+  ```bash
+  go install github.com/vektra/mockery/v2@v2.53.4
+  ```
+
+  > **Note:** In this repo, we use Mockery v2.
 - Add the following code in the interface code file: `//go:generate mockery --case snake --name XXXX`
 - Run go generate using `make generate`
 

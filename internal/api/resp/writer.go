@@ -7,6 +7,8 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type Meta struct {
@@ -58,6 +60,7 @@ func WriteJSONFromError(w http.ResponseWriter, err error) {
 	msg := "Something went wrong"
 
 	var httpErr interface{ HTTPStatusCode() int }
+	var validationErrs validator.ValidationErrors
 
 	switch {
 	case errors.As(err, &httpErr):
@@ -65,6 +68,7 @@ func WriteJSONFromError(w http.ResponseWriter, err error) {
 		msg = err.Error()
 	case errors.As(err, new(*json.UnmarshalTypeError)),
 		errors.As(err, new(*json.SyntaxError)),
+		errors.As(err, &validationErrs),
 		errors.Is(err, io.EOF),
 		errors.Is(err, io.ErrUnexpectedEOF),
 		errors.Is(err, strconv.ErrSyntax),

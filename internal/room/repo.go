@@ -22,8 +22,8 @@ func (r *repo) Save(ctx context.Context, room *entity.Room) error {
 	return err
 }
 
-func (r *repo) Fetch(ctx context.Context) ([]*entity.Room, error) {
-	var rooms []*entity.Room
+func (r *repo) Fetch(ctx context.Context) ([]entity.Room, error) {
+	var rooms []entity.Room
 	err := r.db.WithContext(ctx).Find(&rooms).Error
 	if err != nil {
 		return nil, err

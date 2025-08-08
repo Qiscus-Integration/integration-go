@@ -11,7 +11,7 @@ import (
 
 //go:generate mockery --with-expecter --case snake --name RoomRepository
 type RoomRepository interface {
-	Fetch(ctx context.Context) ([]*entity.Room, error)
+	Fetch(ctx context.Context) ([]entity.Room, error)
 	DeleteBy(ctx context.Context, query map[string]any) error
 }
 

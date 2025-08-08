@@ -34,7 +34,7 @@ func TestResolvedOmnichannelRoom(t *testing.T) {
 	})
 
 	t.Run("skip room less than 10 minutes", func(t *testing.T) {
-		rooms := []*entity.Room{
+		rooms := []entity.Room{
 			{
 				MultichannelRoomID: "room-123",
 				CreatedAt:          time.Now().Add(-5 * time.Minute),
@@ -56,7 +56,7 @@ func TestResolvedOmnichannelRoom(t *testing.T) {
 	})
 
 	t.Run("error resolved room but continue process", func(t *testing.T) {
-		rooms := []*entity.Room{
+		rooms := []entity.Room{
 			{
 				MultichannelRoomID: "room-123",
 				CreatedAt:          time.Now().Add(-15 * time.Minute),
@@ -91,7 +91,7 @@ func TestResolvedOmnichannelRoom(t *testing.T) {
 	})
 
 	t.Run("error delete room but continue process", func(t *testing.T) {
-		rooms := []*entity.Room{
+		rooms := []entity.Room{
 			{
 				MultichannelRoomID: "room-123",
 				CreatedAt:          time.Now().Add(-15 * time.Minute),
@@ -129,7 +129,7 @@ func TestResolvedOmnichannelRoom(t *testing.T) {
 	})
 
 	t.Run("success resolve all rooms", func(t *testing.T) {
-		rooms := []*entity.Room{
+		rooms := []entity.Room{
 			{
 				MultichannelRoomID: "room-123",
 				CreatedAt:          time.Now().Add(-15 * time.Minute),

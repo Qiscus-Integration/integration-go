@@ -2,8 +2,10 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"integration-go/internal/config"
 	"io"
 	"net"
 	"net/http"
@@ -211,6 +213,7 @@ func recoverHandler(next http.Handler) http.Handler {
 	})
 }
 
+
 func requestIDHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestIDHeader := "X-Request-Id"
@@ -223,10 +226,12 @@ func requestIDHandler(next http.Handler) http.Handler {
 		// Set request ID in response header
 		w.Header().Set(requestIDHeader, requestID)
 
-		ctx := log.With().
+		// Store in both zerolog context and regular context
+		ctx := context.WithValue(r.Context(), config.RequestIDKey, requestID)
+		ctx = log.With().
 			Str("request_id", requestID).
 			Logger().
-			WithContext(r.Context())
+			WithContext(ctx)
 
 		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)

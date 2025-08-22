@@ -14,9 +14,233 @@ One significant change from the [v1](https://bitbucket.org/qiscus/integration-go
 - **Faster Contribution**: Developers can contribute to specific modules without causing **collateral damage** in unrelated areas, speeding up the development process.
 - **Ease of Understanding**: The codebase becomes more accessible and understandable as it's organized around modules and use cases. A use case repository clarifies what each module does.
 
-### Create New Module
+### Create New Module/API
 
-[TODO]
+This section guides you through creating a new API module following the established patterns in this codebase.
+
+#### Architecture Overview
+
+This project follows "Clean" Architecture principles with these layers:
+
+- **Handler** (`internal/{module}/handler.go`) - HTTP layer that handles requests/responses
+- **Service** (`internal/{module}/service.go`) - Business logic layer
+- **Repository** (`internal/{module}/repo.go`) - Data access layer
+- **Entity** (`internal/entity/{module}.go`) - Domain models
+
+#### Step-by-Step Guide
+
+**1. Create the Entity**
+
+Create your domain model in `internal/entity/{module}.go`:
+
+```go
+package entity
+
+import "time"
+
+type YourModule struct {
+    ID        int64     `json:"id"`
+    Name      string    `json:"name" gorm:"index"`
+    CreatedAt time.Time `json:"created_at"`
+    UpdatedAt time.Time `json:"updated_at"`
+}
+```
+
+**2. Create the Repository**
+
+Create `internal/{module}/repo.go`:
+
+```go
+package yourmodule
+
+import (
+    "context"
+    "integration-go/internal/entity"
+    "gorm.io/gorm"
+)
+
+type repo struct {
+    db *gorm.DB
+}
+
+func NewRepository(db *gorm.DB) *repo {
+    return &repo{db: db}
+}
+
+func (r *repo) Save(ctx context.Context, item *entity.YourModule) error {
+    return r.db.WithContext(ctx).Save(item).Error
+}
+
+func (r *repo) FindByID(ctx context.Context, id int64) (*entity.YourModule, error) {
+    var item entity.YourModule
+    err := r.db.WithContext(ctx).First(&item, id).Error
+    if err != nil {
+        return nil, err
+    }
+    return &item, nil
+}
+```
+
+**3. Create the Service**
+
+Create `internal/{module}/service.go`:
+
+```go
+package yourmodule
+
+import (
+    "context"
+    "errors"
+    "fmt"
+    "integration-go/internal/entity"
+    "gorm.io/gorm"
+)
+
+//go:generate mockery --with-expecter --case snake --name Repository
+type Repository interface {
+    Save(ctx context.Context, item *entity.YourModule) error
+    FindByID(ctx context.Context, id int64) (*entity.YourModule, error)
+}
+
+type Service struct {
+    repo Repository
+}
+
+func NewService(repo Repository) *Service {
+    return &Service{repo: repo}
+}
+
+func (s *Service) GetByID(ctx context.Context, id int64) (*entity.YourModule, error) {
+    item, err := s.repo.FindByID(ctx, id)
+    if err != nil {
+        if errors.Is(err, gorm.ErrRecordNotFound) {
+            return nil, fmt.Errorf("item not found")
+        }
+        return nil, fmt.Errorf("failed to find item: %w", err)
+    }
+    return item, nil
+}
+
+func (s *Service) Create(ctx context.Context, req *CreateRequest) error {
+    item := &entity.YourModule{
+        Name: req.Name,
+    }
+
+    if err := s.repo.Save(ctx, item); err != nil {
+        return fmt.Errorf("failed to save item: %w", err)
+    }
+
+    return nil
+}
+
+type CreateRequest struct {
+    Name string `json:"name" validate:"required"`
+}
+```
+
+**4. Create the Handler**
+
+Create `internal/{module}/handler.go`:
+
+```go
+package yourmodule
+
+import (
+    "encoding/json"
+    "integration-go/internal/api/resp"
+    "net/http"
+    "strconv"
+
+    "github.com/rs/zerolog/log"
+)
+
+type httpHandler struct {
+    svc *Service
+}
+
+func NewHttpHandler(svc *Service) *httpHandler {
+    return &httpHandler{svc: svc}
+}
+
+func (h *httpHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+    ctx := r.Context()
+
+    id, err := strconv.Atoi(r.PathValue("id"))
+    if err != nil {
+        resp.WriteJSONFromError(w, err)
+        return
+    }
+
+    item, err := h.svc.GetByID(ctx, int64(id))
+    if err != nil {
+        log.Ctx(ctx).Error().Msgf("failed to get item: %s", err.Error())
+        resp.WriteJSONFromError(w, err)
+        return
+    }
+
+    resp.WriteJSON(w, http.StatusOK, item)
+}
+
+func (h *httpHandler) Create(w http.ResponseWriter, r *http.Request) {
+    ctx := r.Context()
+
+    var req CreateRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        resp.WriteJSONFromError(w, err)
+        return
+    }
+
+    if err := h.svc.Create(ctx, &req); err != nil {
+        log.Ctx(ctx).Error().Msgf("failed to create item: %s", err.Error())
+        resp.WriteJSONFromError(w, err)
+        return
+    }
+
+    resp.WriteJSON(w, http.StatusCreated, "created")
+}
+```
+
+**5. Register Routes in Server**
+
+Add your module to `internal/api/server.go` in the `NewServer()` function:
+
+```go
+// YourModule
+yourModuleRepo := yourmodule.NewRepository(db)
+yourModuleSvc := yourmodule.NewService(yourModuleRepo)
+yourModuleHandler := yourmodule.NewHttpHandler(yourModuleSvc)
+
+// Add routes
+r.Handle("GET /api/v1/yourmodule/{id}", authMidd.StaticToken(http.HandlerFunc(yourModuleHandler.GetByID)))
+r.Handle("POST /api/v1/yourmodule", authMidd.StaticToken(http.HandlerFunc(yourModuleHandler.Create)))
+```
+
+**6. Add Database Migration (if needed)**
+
+If your entity needs database tables, add migration to `internal/postgres/migrate.go`:
+
+```go
+func Migrate(db *gorm.DB) {
+    db.AutoMigrate(
+        &entity.Room{},
+        &entity.YourModule{}, // Add your entity here
+    )
+}
+```
+
+#### Key Patterns to Follow
+
+- **Error Handling**: Use `resp.WriteJSONFromError(w, err)` for consistent error responses
+- **Logging**: Use `log.Ctx(ctx).Error().Msgf()` for contextual logging
+- **Validation**: Use struct tags with `validate` for request validation
+- **Database**: Always use `WithContext(ctx)` for database operations
+- **Mocking**: Add `//go:generate mockery` comments for interfaces that need mocks
+
+#### Available Response Utilities
+
+- `resp.WriteJSON(w, statusCode, data)` - Standard JSON response
+- `resp.WriteJSONFromError(w, err)` - Error response with proper status codes
+- `resp.WriteJSONWithPaginate(w, statusCode, data, total, page, limit)` - Paginated response
 
 ### Sample Use Case
 
@@ -57,6 +281,7 @@ To run the project locally, follow these steps:
   ```
 
   > **Note:** In this repo, we use Mockery v2.
+
 - Add the following code in the interface code file: `//go:generate mockery --case snake --name XXXX`
 - Run go generate using `make generate`
 

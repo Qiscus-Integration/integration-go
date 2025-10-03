@@ -155,16 +155,10 @@ tests/room/service_test.go
 **Rule:** Files should be focused on a single responsibility.
 
 **Review Checklist:**
-- [ ] File size < 300 lines (excluding tests)
 - [ ] Each file has single, clear purpose
 - [ ] No "util" or "common" files
 - [ ] Related functionality grouped together
-
-**File Size Limits:**
-- Handler files: < 100 lines
-- Service files: < 200 lines
-- Repository files: < 150 lines
-- Middleware files: < 300 lines
+- [ ] No mixing of concerns (e.g., handler + business logic)
 
 ---
 
@@ -501,6 +495,36 @@ resp.WriteJSONWithPaginate(w, http.StatusOK, rooms, total, page, limit)
 w.WriteHeader(http.StatusOK)
 json.NewEncoder(w).Encode(room)
 w.Write([]byte(`{"error": "something went wrong"}`))
+```
+
+**IMPORTANT: `resp.WriteJSONFromError` Auto-Maps Common Errors**
+
+The `resp.WriteJSONFromError` utility automatically handles error-to-status-code mapping:
+
+- **400 Bad Request** for:
+  - `json.UnmarshalTypeError` - JSON decode errors
+  - `json.SyntaxError` - Malformed JSON
+  - `validator.ValidationErrors` - Validation errors
+  - `io.EOF`, `io.ErrUnexpectedEOF` - Empty/incomplete body
+  - `strconv.ErrSyntax`, `strconv.ErrRange` - Invalid number conversion
+
+- **Custom Status** for errors implementing `HTTPStatusCode() int` interface
+
+- **500 Internal Server Error** for all other errors
+
+**This means:**
+```go
+// ✅ CORRECT: JSON decode errors automatically return 400
+if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+    resp.WriteJSONFromError(w, err)  // Returns 400, not 500!
+    return
+}
+
+// ❌ WRONG: Don't manually wrap JSON errors
+if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+    resp.WriteJSON(w, http.StatusBadRequest, map[string]string{"message": "invalid body"})
+    // Unnecessary! WriteJSONFromError handles this
+}
 ```
 
 ---
@@ -1118,6 +1142,17 @@ err := r.db.WithContext(ctx).Raw(query).Scan(&room).Error
 
 ---
 
+### ✅ SHOULD Review CORS When Used
+
+**Rule:** Only review CORS configuration if `corsHandler` is actively used in middleware chain.
+
+**Review Checklist:**
+- [ ] Check if wildcard `Access-Control-Allow-Origin: *` is appropriate
+- [ ] Wildcard acceptable for public integration APIs
+- [ ] Consider restricting for internal APIs
+
+---
+
 ### ✅ MUST Configure Connection Pools
 
 **Rule:** Database connection pools MUST be properly configured.
@@ -1281,7 +1316,7 @@ func NewService(db *gorm.DB) *Service {
 **Anti-Pattern:** Using blank identifier for errors
 
 ```go
-// ❌ BAD: Ignoring errors
+// ❌ BAD: Ignoring errors in critical operations
 room, _ := s.repo.FindByID(ctx, id)
 return room, nil
 
@@ -1291,6 +1326,20 @@ if err != nil {
     return nil, fmt.Errorf("failed to find room: %w", err)
 }
 return room, nil
+
+// ⚠️ ACCEPTABLE EXCEPTION: Errors in non-critical logging/debugging only
+// When reading request body solely for logging purposes (not business logic),
+// it's acceptable to ignore errors if the operation continues normally.
+// Example from middleware.go and client.go:
+buf, _ := io.ReadAll(r.Body)  // Only for logging, body is restored after
+r.Body = io.NopCloser(bytes.NewBuffer(buf))
+
+// But prefer being explicit when possible:
+buf, err := io.ReadAll(r.Body)
+if err != nil {
+    log.Ctx(ctx).Warn().Err(err).Msg("failed to read body for logging")
+    buf = []byte{}
+}
 ```
 
 ---

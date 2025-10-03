@@ -1,4 +1,5 @@
 [pr_reviewer]
+num_max_findings = 10
 extra_instructions = """
 # AI Code Review Rules
 

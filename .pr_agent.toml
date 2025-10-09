@@ -1,0 +1,1576 @@
+[pr_reviewer]
+num_max_findings = 10
+extra_instructions = """
+# AI Code Review Rules
+
+## Table of Contents
+
+1. [Architecture & Design Patterns](#1-architecture--design-patterns)
+2. [Code Structure & Organization](#2-code-structure--organization)
+3. [Naming Conventions](#3-naming-conventions)
+4. [Error Handling](#4-error-handling)
+5. [Context Management](#5-context-management)
+6. [HTTP Handlers & API](#6-http-handlers--api)
+7. [Database & Repository Layer](#7-database--repository-layer)
+8. [Testing Requirements](#8-testing-requirements)
+9. [Go Best Practices](#9-go-best-practices)
+10. [Security & Performance](#10-security--performance)
+11. [Documentation Standards](#11-documentation-standards)
+12. [Common Anti-Patterns](#12-common-anti-patterns)
+
+---
+
+## 1. Architecture & Design Patterns
+
+### ✅ MUST Follow Module-Based Architecture
+
+**Rule:** Each business domain MUST be organized in its own package with clear layer separation.
+
+**Required Structure:**
+```
+internal/yourmodule/
+├── handler.go        # HTTP layer (controllers)
+├── service.go        # Business logic layer
+├── repo.go           # Data access layer
+├── errors.go         # Domain-specific errors
+├── service_test.go   # Unit tests
+└── mocks/            # Generated mocks
+```
+
+**Review Checklist:**
+- [ ] New modules follow this structure
+- [ ] No mixing of concerns between layers
+- [ ] Dependencies flow: Handler → Service → Repository
+- [ ] No circular dependencies between packages
+
+**Example:**
+```go
+// ✅ GOOD: Clear layer separation
+package room
+
+type httpHandler struct {
+    svc *Service  // Handler depends on service
+}
+
+type Service struct {
+    repo Repository  // Service depends on repository interface
+}
+
+// ❌ BAD: Repository depending on handler
+type repo struct {
+    handler *httpHandler  // NEVER do this
+}
+```
+
+---
+
+### ✅ MUST Use Dependency Injection
+
+**Rule:** All dependencies MUST be injected through constructor functions.
+
+**Review Checklist:**
+- [ ] No global variables for state
+- [ ] All constructors follow `New*` naming convention
+- [ ] Dependencies passed as parameters
+- [ ] No `init()` functions for dependency setup
+
+**Example:**
+```go
+// ✅ GOOD: Constructor injection
+func NewService(repo Repository, omni Omnichannel) *Service {
+    return &Service{
+        repo: repo,
+        omni: omni,
+    }
+}
+
+// ❌ BAD: Global state
+var globalRepo *repo
+func GetService() *Service {
+    return &Service{repo: globalRepo}
+}
+```
+
+---
+
+### ✅ MUST Define Interfaces at Point of Use
+
+**Rule:** Interfaces MUST be defined in the consumer package, not the implementation package.
+
+**Review Checklist:**
+- [ ] Interfaces defined in service layer (not repository layer)
+- [ ] Interfaces are small (1-3 methods)
+- [ ] All interfaces have `//go:generate mockery` directive
+- [ ] Interface names describe capability, not implementation
+
+**Example:**
+```go
+// ✅ GOOD: Interface in service.go (consumer)
+package room
+
+//go:generate mockery --with-expecter --case snake --name Repository
+type Repository interface {
+    FindByID(ctx context.Context, id int64) (*entity.Room, error)
+    Save(ctx context.Context, room *entity.Room) error
+}
+
+// ❌ BAD: Interface in repo.go (implementation)
+package room
+
+type Repository interface {  // Don't define where you implement
+    FindByID(ctx context.Context, id int64) (*entity.Room, error)
+}
+```
+
+---
+
+## 2. Code Structure & Organization
+
+### ✅ MUST Follow Package Layout
+
+**Rule:** Code MUST be organized according to project conventions.
+
+**Review Checklist:**
+- [ ] All application code in `internal/` (private to this module)
+- [ ] Entry points in `cmd/` directory
+- [ ] Shared entities in `internal/entity/`
+- [ ] No `pkg/` directory (use `internal/` instead)
+- [ ] Tests co-located with source files
+
+**Directory Rules:**
+```
+✅ GOOD:
+internal/room/service.go
+internal/room/service_test.go
+
+❌ BAD:
+pkg/room/service.go
+tests/room/service_test.go
+```
+
+---
+
+### ✅ MUST Keep Files Focused
+
+**Rule:** Files should be focused on a single responsibility.
+
+**Review Checklist:**
+- [ ] Each file has single, clear purpose
+- [ ] No "util" or "common" files
+- [ ] Related functionality grouped together
+- [ ] No mixing of concerns (e.g., handler + business logic)
+
+---
+
+## 3. Naming Conventions
+
+### ✅ MUST Follow Naming Standards
+
+**Rule:** All code MUST follow consistent naming conventions.
+
+**Review Checklist:**
+
+#### Files
+- [ ] Use lowercase with underscores: `service.go`, `service_test.go`
+- [ ] Test files end with `_test.go`
+- [ ] No camelCase or PascalCase filenames
+
+#### Functions/Methods
+```go
+// ✅ GOOD
+func NewService()          // Constructors start with "New"
+func (s *Service) GetRoomByID()  // Exported methods: PascalCase
+func (s *Service) validateRoom() // Unexported methods: camelCase
+
+// ❌ BAD
+func CreateService()       // Should be NewService
+func (s *Service) get_room()     // Should use camelCase
+func (s *Service) GETROOMBYID()  // Don't use all caps
+```
+
+#### Variables
+```go
+// ✅ GOOD: Standard abbreviations
+ctx    // context
+svc    // service
+cfg    // config
+db     // database
+rdb    // redis database
+req    // request
+resp   // response
+err    // error
+
+// ❌ BAD: Non-standard or unclear
+c      // context (use ctx)
+service // use svc
+configuration // use cfg
+```
+
+#### Constants
+```go
+// ✅ GOOD: CamelCase with descriptive names
+const (
+    HealthStateOK   HealthState = "ok"
+    HealthStateFail HealthState = "fail"
+)
+
+// ❌ BAD
+const (
+    HEALTH_STATE_OK = "ok"  // Don't use SCREAMING_SNAKE_CASE
+    ok = "ok"               // Too short for exported const
+)
+```
+
+---
+
+## 4. Error Handling
+
+### ✅ MUST Wrap Errors with Context
+
+**Rule:** All errors MUST be wrapped with meaningful context using `fmt.Errorf` and `%w` verb.
+
+**Review Checklist:**
+- [ ] All errors wrapped with context
+- [ ] Use `%w` verb for error chains
+- [ ] Error messages start with lowercase
+- [ ] No error swallowing (log or return)
+
+**Example:**
+```go
+// ✅ GOOD: Error wrapping with context
+func (s *Service) GetRoomByID(ctx context.Context, id int64) (*entity.Room, error) {
+    room, err := s.repo.FindByID(ctx, id)
+    if err != nil {
+        if errors.Is(err, gorm.ErrRecordNotFound) {
+            return nil, &roomError{roomErrorNotFound}
+        }
+        return nil, fmt.Errorf("failed to find room: %w", err)
+    }
+    return room, nil
+}
+
+// ❌ BAD: No context, error lost
+func (s *Service) GetRoomByID(ctx context.Context, id int64) (*entity.Room, error) {
+    room, err := s.repo.FindByID(ctx, id)
+    if err != nil {
+        return nil, err  // No context added
+    }
+    return room, nil
+}
+
+// ❌ BAD: Error swallowed
+func (s *Service) GetRoomByID(ctx context.Context, id int64) (*entity.Room, error) {
+    room, err := s.repo.FindByID(ctx, id)
+    if err != nil {
+        // Error ignored completely
+    }
+    return room, nil
+}
+```
+
+---
+
+### ✅ MUST Implement Custom Errors with HTTP Status
+
+**Rule:** Domain errors MUST implement both `error` and `HTTPStatusCode()` interfaces.
+
+**Review Checklist:**
+- [ ] Custom error types defined in `errors.go`
+- [ ] Implements `Error() string` method
+- [ ] Implements `HTTPStatusCode() int` method
+- [ ] Error codes defined as constants
+
+**Example:**
+```go
+// ✅ GOOD: Complete error implementation
+const (
+    roomErrorNotFound = iota
+    roomErrorInvalidInput
+)
+
+type roomError struct {
+    code int
+}
+
+func (e *roomError) Error() string {
+    switch e.code {
+    case roomErrorNotFound:
+        return "Room not found"
+    case roomErrorInvalidInput:
+        return "Invalid room input"
+    default:
+        return "Unknown error"
+    }
+}
+
+func (e *roomError) HTTPStatusCode() int {
+    switch e.code {
+    case roomErrorNotFound:
+        return http.StatusNotFound
+    case roomErrorInvalidInput:
+        return http.StatusBadRequest
+    default:
+        return http.StatusInternalServerError
+    }
+}
+
+// ❌ BAD: Missing HTTPStatusCode
+type roomError struct {
+    message string
+}
+
+func (e *roomError) Error() string {
+    return e.message
+}
+// Missing HTTPStatusCode method
+```
+
+---
+
+### ✅ MUST Check Errors Immediately
+
+**Rule:** Errors MUST be checked immediately after the operation.
+
+**Example:**
+```go
+// ✅ GOOD: Immediate error check
+room, err := s.repo.FindByID(ctx, id)
+if err != nil {
+    return nil, fmt.Errorf("failed to find room: %w", err)
+}
+
+// ❌ BAD: Delayed error check
+room, err := s.repo.FindByID(ctx, id)
+anotherVar := doSomething()
+if err != nil {  // Checked too late
+    return nil, err
+}
+```
+
+---
+
+## 5. Context Management
+
+### ✅ MUST Accept Context as First Parameter
+
+**Rule:** All service and repository methods MUST accept `context.Context` as the first parameter.
+
+**Review Checklist:**
+- [ ] Context is first parameter
+- [ ] Context passed to all downstream calls
+- [ ] Database operations use `WithContext(ctx)`
+- [ ] HTTP client calls use `ctx`
+- [ ] Never pass `nil` context (use `context.Background()` or `context.TODO()`)
+
+**Example:**
+```go
+// ✅ GOOD: Context first, propagated everywhere
+func (s *Service) GetRoomByID(ctx context.Context, id int64) (*entity.Room, error) {
+    room, err := s.repo.FindByID(ctx, id)  // Propagate ctx
+    if err != nil {
+        return nil, fmt.Errorf("failed to find room: %w", err)
+    }
+    return room, nil
+}
+
+func (r *repo) FindByID(ctx context.Context, id int64) (*entity.Room, error) {
+    var room entity.Room
+    err := r.db.WithContext(ctx).First(&room, id).Error  // Use ctx
+    return &room, err
+}
+
+// ❌ BAD: No context
+func (s *Service) GetRoomByID(id int64) (*entity.Room, error) {
+    room, err := s.repo.FindByID(id)  // Missing context
+    return room, err
+}
+
+// ❌ BAD: Context not first parameter
+func (s *Service) GetRoomByID(id int64, ctx context.Context) error {
+    // Context should be first
+}
+```
+
+---
+
+### ✅ MUST Use Context-Aware Logging
+
+**Rule:** All logging MUST use `log.Ctx(ctx)` to include request ID.
+
+**Review Checklist:**
+- [ ] All logs use `log.Ctx(ctx)` instead of `log`
+- [ ] Request ID automatically included
+- [ ] Structured logging with `.Str()`, `.Int()`, etc.
+
+**Example:**
+```go
+// ✅ GOOD: Context-aware logging
+func (h *httpHandler) GetRoomByID(w http.ResponseWriter, r *http.Request) {
+    ctx := r.Context()
+
+    room, err := h.svc.GetRoomByID(ctx, id)
+    if err != nil {
+        log.Ctx(ctx).Error().Msgf("failed to get room: %s", err.Error())
+        resp.WriteJSONFromError(w, err)
+        return
+    }
+}
+
+// ❌ BAD: No context in logging
+log.Error().Msgf("failed to get room: %s", err.Error())  // Missing request ID
+```
+
+---
+
+## 6. HTTP Handlers & API
+
+### ✅ MUST Follow Handler Pattern
+
+**Rule:** All HTTP handlers MUST follow the 3-step structure: Parse → Call → Respond.
+
+**Review Checklist:**
+- [ ] Handlers extract context first: `ctx := r.Context()`
+- [ ] Input validation before service call
+- [ ] Service called with context
+- [ ] Errors logged with context
+- [ ] Response written using `resp` utilities
+
+**Standard Handler Structure:**
+```go
+// ✅ GOOD: Standard 3-step pattern
+func (h *httpHandler) GetRoomByID(w http.ResponseWriter, r *http.Request) {
+    ctx := r.Context()
+
+    // 1. Parse & validate input
+    id, err := strconv.Atoi(r.PathValue("id"))
+    if err != nil {
+        resp.WriteJSONFromError(w, err)
+        return
+    }
+
+    // 2. Call service
+    room, err := h.svc.GetRoomByID(ctx, int64(id))
+    if err != nil {
+        log.Ctx(ctx).Error().Msgf("failed to get room: %s", err.Error())
+        resp.WriteJSONFromError(w, err)
+        return
+    }
+
+    // 3. Write response
+    resp.WriteJSON(w, http.StatusOK, room)
+}
+
+// ❌ BAD: No error logging, inconsistent responses
+func (h *httpHandler) GetRoomByID(w http.ResponseWriter, r *http.Request) {
+    id, _ := strconv.Atoi(r.PathValue("id"))  // Error ignored
+    room, err := h.svc.GetRoomByID(context.Background(), int64(id))  // Wrong context
+    if err != nil {
+        w.WriteHeader(500)  // Don't write raw responses
+        return
+    }
+    json.NewEncoder(w).Encode(room)  // Use resp utilities
+}
+```
+
+---
+
+### ✅ MUST Use Response Utilities
+
+**Rule:** All responses MUST use the `resp` package utilities.
+
+**Review Checklist:**
+- [ ] Success: `resp.WriteJSON(w, statusCode, data)`
+- [ ] Errors: `resp.WriteJSONFromError(w, err)`
+- [ ] Pagination: `resp.WriteJSONWithPaginate(w, code, data, total, page, limit)`
+- [ ] Never write raw JSON or status codes directly
+
+**Example:**
+```go
+// ✅ GOOD: Use response utilities
+resp.WriteJSON(w, http.StatusOK, room)
+resp.WriteJSONFromError(w, err)
+resp.WriteJSONWithPaginate(w, http.StatusOK, rooms, total, page, limit)
+
+// ❌ BAD: Manual response writing
+w.WriteHeader(http.StatusOK)
+json.NewEncoder(w).Encode(room)
+w.Write([]byte(`{"error": "something went wrong"}`))
+```
+
+**IMPORTANT: `resp.WriteJSONFromError` Auto-Maps Common Errors**
+
+The `resp.WriteJSONFromError` utility automatically handles error-to-status-code mapping:
+
+- **400 Bad Request** for:
+  - `json.UnmarshalTypeError` - JSON decode errors
+  - `json.SyntaxError` - Malformed JSON
+  - `validator.ValidationErrors` - Validation errors
+  - `io.EOF`, `io.ErrUnexpectedEOF` - Empty/incomplete body
+  - `strconv.ErrSyntax`, `strconv.ErrRange` - Invalid number conversion
+
+- **Custom Status** for errors implementing `HTTPStatusCode() int` interface
+
+- **500 Internal Server Error** for all other errors
+
+**This means:**
+```go
+// ✅ CORRECT: JSON decode errors automatically return 400
+if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+    resp.WriteJSONFromError(w, err)  // Returns 400, not 500!
+    return
+}
+
+// ❌ WRONG: Don't manually wrap JSON errors
+if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+    resp.WriteJSON(w, http.StatusBadRequest, map[string]string{"message": "invalid body"})
+    // Unnecessary! WriteJSONFromError handles this
+}
+```
+
+---
+
+### ✅ MUST Use Go 1.22+ Routing Patterns
+
+**Rule:** Route registration MUST use method + path pattern.
+
+**Review Checklist:**
+- [ ] Routes use `"METHOD /path"` pattern
+- [ ] Path parameters use `{param}` syntax
+- [ ] Parameters extracted with `r.PathValue("param")`
+- [ ] Middleware applied with proper chaining
+
+**Example:**
+```go
+// ✅ GOOD: Go 1.22+ routing
+r := http.NewServeMux()
+r.Handle("GET /api/v1/rooms/{id}", authMidd.StaticToken(http.HandlerFunc(handler.GetRoomByID)))
+r.Handle("POST /api/v1/rooms", authMidd.StaticToken(http.HandlerFunc(handler.CreateRoom)))
+
+// Inside handler
+id := r.PathValue("id")
+
+// ❌ BAD: Old-style routing
+r.HandleFunc("/api/v1/rooms/", handler.GetRoomByID)  // No method specified
+```
+
+---
+
+### ✅ MUST Use Consistent Status Codes
+
+**Rule:** HTTP status codes MUST follow REST conventions.
+
+**Status Code Guidelines:**
+- `200 OK` - Successful GET request
+- `201 Created` - Successful POST/PUT creating resource
+- `204 No Content` - Successful DELETE or OPTIONS
+- `400 Bad Request` - Invalid input/validation error
+- `401 Unauthorized` - Authentication required/failed
+- `403 Forbidden` - Authenticated but not authorized
+- `404 Not Found` - Resource not found
+- `500 Internal Server Error` - Unexpected errors
+
+**Review Checklist:**
+- [ ] Status codes match the operation
+- [ ] Custom errors return appropriate codes
+- [ ] Don't use `200` for errors with error message
+
+---
+
+### ✅ MUST Include Request ID in Error Responses
+
+**Rule:** All error responses MUST include the request ID for tracing.
+
+**Review Checklist:**
+- [ ] Error responses use `resp.WriteJSONFromError(w, err)`
+- [ ] Request ID automatically included in response
+- [ ] Request ID logged with errors
+
+**Response Format:**
+```json
+{
+  "message": "Room not found",
+  "request_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+---
+
+## 7. Database & Repository Layer
+
+### ✅ MUST Use GORM with Context
+
+**Rule:** All database operations MUST use `WithContext(ctx)`.
+
+**Review Checklist:**
+- [ ] All queries use `db.WithContext(ctx)`
+- [ ] Errors checked immediately
+- [ ] No raw SQL queries (use GORM API)
+- [ ] Transactions use context
+
+**Example:**
+```go
+// ✅ GOOD: Context-aware GORM
+func (r *repo) FindByID(ctx context.Context, id int64) (*entity.Room, error) {
+    var room entity.Room
+    err := r.db.WithContext(ctx).First(&room, id).Error
+    if err != nil {
+        return nil, err
+    }
+    return &room, nil
+}
+
+func (r *repo) Save(ctx context.Context, room *entity.Room) error {
+    return r.db.WithContext(ctx).Save(room).Error
+}
+
+// ❌ BAD: No context
+func (r *repo) FindByID(id int64) (*entity.Room, error) {
+    var room entity.Room
+    err := r.db.First(&room, id).Error  // Missing WithContext
+    return &room, err
+}
+```
+
+---
+
+### ✅ MUST Handle GORM Errors Properly
+
+**Rule:** Repository errors MUST be properly handled and wrapped.
+
+**Review Checklist:**
+- [ ] Check for `gorm.ErrRecordNotFound` explicitly
+- [ ] Convert GORM errors to domain errors
+- [ ] Wrap errors with context
+
+**Example:**
+```go
+// ✅ GOOD: Proper GORM error handling
+func (s *Service) GetRoomByID(ctx context.Context, id int64) (*entity.Room, error) {
+    room, err := s.repo.FindByID(ctx, id)
+    if err != nil {
+        if errors.Is(err, gorm.ErrRecordNotFound) {
+            return nil, &roomError{roomErrorNotFound}
+        }
+        return nil, fmt.Errorf("failed to find room: %w", err)
+    }
+    return room, nil
+}
+
+// ❌ BAD: Generic error handling
+func (s *Service) GetRoomByID(ctx context.Context, id int64) (*entity.Room, error) {
+    room, err := s.repo.FindByID(ctx, id)
+    if err != nil {
+        return nil, err  // No distinction between not found and other errors
+    }
+    return room, nil
+}
+```
+
+---
+
+### ✅ MUST Use Repository Pattern
+
+**Rule:** All database access MUST go through repository interfaces.
+
+**Review Checklist:**
+- [ ] No direct database access in service layer
+- [ ] Repository methods are focused and single-purpose
+- [ ] Repository implements interface defined in service
+- [ ] Repository has no business logic
+
+**Example:**
+```go
+// ✅ GOOD: Repository pattern
+// In service.go
+type Repository interface {
+    FindByID(ctx context.Context, id int64) (*entity.Room, error)
+    Save(ctx context.Context, room *entity.Room) error
+}
+
+type Service struct {
+    repo Repository  // Interface dependency
+}
+
+// In repo.go
+type repo struct {
+    db *gorm.DB
+}
+
+func (r *repo) FindByID(ctx context.Context, id int64) (*entity.Room, error) {
+    // Only data access logic
+}
+
+// ❌ BAD: Direct database access
+type Service struct {
+    db *gorm.DB  // Direct dependency on DB
+}
+
+func (s *Service) GetRoom(ctx context.Context, id int64) (*entity.Room, error) {
+    var room entity.Room
+    s.db.WithContext(ctx).First(&room, id)  // Database logic in service
+    return &room, nil
+}
+```
+
+---
+
+## 8. Testing Requirements
+
+### ✅ MUST Write Tests for Service Layer
+
+**Rule:** All service methods MUST have unit tests.
+
+**Review Checklist:**
+- [ ] Test file named `service_test.go`
+- [ ] Tests use mockery-generated mocks
+- [ ] Each public method has tests
+- [ ] Tests cover success and error cases
+- [ ] Minimum 25% code coverage (enforced in CI)
+
+**Example:**
+```go
+// ✅ GOOD: Comprehensive service tests
+func TestGetRoomByID(t *testing.T) {
+    mockRepo := mocks.NewRepository(t)
+
+    t.Run("success get room", func(t *testing.T) {
+        expectedRoom := &entity.Room{ID: 1, Name: "Test"}
+        mockRepo.EXPECT().FindByID(mock.Anything, int64(1)).
+            Return(expectedRoom, nil).Once()
+
+        svc := Service{repo: mockRepo}
+        room, err := svc.GetRoomByID(context.Background(), 1)
+
+        assert.NoError(t, err)
+        assert.Equal(t, expectedRoom, room)
+        mockRepo.AssertExpectations(t)
+    })
+
+    t.Run("error get room - not found", func(t *testing.T) {
+        mockRepo.EXPECT().FindByID(mock.Anything, int64(1)).
+            Return(nil, gorm.ErrRecordNotFound).Once()
+
+        svc := Service{repo: mockRepo}
+        room, err := svc.GetRoomByID(context.Background(), 1)
+
+        assert.Error(t, err)
+        assert.Nil(t, room)
+        var roomErr *roomError
+        assert.True(t, errors.As(err, &roomErr))
+        mockRepo.AssertExpectations(t)
+    })
+}
+
+// ❌ BAD: No error case tests
+func TestGetRoomByID(t *testing.T) {
+    // Only tests happy path
+}
+```
+
+---
+
+### ✅ MUST Use Mockery for Mocking
+
+**Rule:** All interfaces MUST have generated mocks using mockery.
+
+**Review Checklist:**
+- [ ] Interface has `//go:generate mockery` directive
+- [ ] Directive uses `--with-expecter --case snake`
+- [ ] Mocks generated in `mocks/` subdirectory
+- [ ] Run `make generate` before committing
+
+**Example:**
+```go
+// ✅ GOOD: Mockery directive
+//go:generate mockery --with-expecter --case snake --name Repository
+type Repository interface {
+    FindByID(ctx context.Context, id int64) (*entity.Room, error)
+    Save(ctx context.Context, room *entity.Room) error
+}
+
+// In tests
+mockRepo := mocks.NewRepository(t)
+mockRepo.EXPECT().FindByID(mock.Anything, int64(1)).Return(room, nil).Once()
+
+// ❌ BAD: Manual mocking
+type mockRepo struct {
+    findByIDFunc func(ctx context.Context, id int64) (*entity.Room, error)
+}
+```
+
+---
+
+### ✅ MUST Verify Mock Expectations
+
+**Rule:** All tests MUST verify mock expectations were met.
+
+**Review Checklist:**
+- [ ] `mockRepo.AssertExpectations(t)` called at end
+- [ ] `.Once()` or `.Times(n)` specified for calls
+- [ ] `mock.Anything` used for unimportant parameters
+- [ ] Specific values used for important parameters
+
+**Example:**
+```go
+// ✅ GOOD: Verified expectations
+t.Run("success", func(t *testing.T) {
+    mockRepo.EXPECT().FindByID(mock.Anything, int64(1)).
+        Return(room, nil).Once()
+
+    svc := Service{repo: mockRepo}
+    result, err := svc.GetRoomByID(context.Background(), 1)
+
+    assert.NoError(t, err)
+    mockRepo.AssertExpectations(t)  // Verify called once
+})
+
+// ❌ BAD: No verification
+t.Run("success", func(t *testing.T) {
+    mockRepo.EXPECT().FindByID(mock.Anything, int64(1)).Return(room, nil)
+    svc := Service{repo: mockRepo}
+    svc.GetRoomByID(context.Background(), 1)
+    // Missing AssertExpectations
+}
+```
+
+---
+
+### ✅ SHOULD Use Table-Driven Tests
+
+**Rule:** Complex test scenarios SHOULD use table-driven tests.
+
+**Review Checklist:**
+- [ ] Use table-driven for multiple similar test cases
+- [ ] Each test case has descriptive name
+- [ ] Test cases are independent
+- [ ] Setup/teardown in t.Run()
+
+**Example:**
+```go
+// ✅ GOOD: Table-driven tests
+func TestCheck(t *testing.T) {
+    tests := []struct {
+        name              string
+        mockDatabaseError error
+        mockRedisError    error
+        expectedHealthy   bool
+    }{
+        {
+            name:              "both healthy",
+            mockDatabaseError: nil,
+            mockRedisError:    nil,
+            expectedHealthy:   true,
+        },
+        {
+            name:              "database unhealthy",
+            mockDatabaseError: errors.New("connection failed"),
+            mockRedisError:    nil,
+            expectedHealthy:   false,
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            // Test implementation
+        })
+    }
+}
+```
+
+---
+
+### ✅ MUST Pass Coverage Threshold
+
+**Rule:** All PRs MUST maintain minimum 25% test coverage.
+
+**Review Checklist:**
+- [ ] Run `make test/coverage` before committing
+- [ ] Coverage report passes threshold
+- [ ] New code has corresponding tests
+- [ ] Race detection passes (`-race` flag)
+
+---
+
+## 9. Go Best Practices
+
+### ✅ MUST Use Pointer Receivers
+
+**Rule:** Struct methods MUST use pointer receivers.
+
+**Review Checklist:**
+- [ ] All methods use `func (s *Service)` not `func (s Service)`
+- [ ] Consistent receiver names within type
+- [ ] Receiver name is 1-2 characters (not `this` or `self`)
+
+**Example:**
+```go
+// ✅ GOOD: Pointer receiver
+type Service struct {
+    repo Repository
+}
+
+func (s *Service) GetRoomByID(ctx context.Context, id int64) (*entity.Room, error) {
+    return s.repo.FindByID(ctx, id)
+}
+
+// ❌ BAD: Value receiver for struct with state
+func (s Service) GetRoomByID(ctx context.Context, id int64) (*entity.Room, error) {
+    return s.repo.FindByID(ctx, id)
+}
+
+// ❌ BAD: Inconsistent receiver names
+func (s *Service) GetRoom() {}
+func (svc *Service) CreateRoom() {}  // Use 's' consistently
+```
+
+---
+
+### ✅ MUST Organize Imports Properly
+
+**Rule:** Imports MUST be organized in three groups: stdlib, internal, external.
+
+**Review Checklist:**
+- [ ] Standard library imports first
+- [ ] Internal packages second
+- [ ] External dependencies third
+- [ ] Groups separated by blank line
+- [ ] Alphabetically sorted within groups
+
+**Example:**
+```go
+// ✅ GOOD: Organized imports
+import (
+    "context"
+    "fmt"
+    "time"
+
+    "integration-go/internal/entity"
+    "integration-go/internal/config"
+
+    "github.com/rs/zerolog/log"
+    "gorm.io/gorm"
+)
+
+// ❌ BAD: Mixed imports
+import (
+    "gorm.io/gorm"
+    "context"
+    "integration-go/internal/entity"
+    "fmt"
+)
+```
+
+---
+
+### ✅ MUST Use Early Returns
+
+**Rule:** Use early returns to reduce nesting.
+
+**Review Checklist:**
+- [ ] Error checks return early
+- [ ] Maximum nesting depth: 3 levels
+- [ ] Happy path is at the end
+- [ ] No unnecessary else blocks
+
+**Example:**
+```go
+// ✅ GOOD: Early returns
+func (s *Service) GetRoomByID(ctx context.Context, id int64) (*entity.Room, error) {
+    room, err := s.repo.FindByID(ctx, id)
+    if err != nil {
+        return nil, fmt.Errorf("failed to find room: %w", err)
+    }
+
+    if room.IsDeleted {
+        return nil, &roomError{roomErrorNotFound}
+    }
+
+    return room, nil
+}
+
+// ❌ BAD: Nested conditionals
+func (s *Service) GetRoomByID(ctx context.Context, id int64) (*entity.Room, error) {
+    room, err := s.repo.FindByID(ctx, id)
+    if err == nil {
+        if !room.IsDeleted {
+            return room, nil
+        } else {
+            return nil, &roomError{roomErrorNotFound}
+        }
+    } else {
+        return nil, fmt.Errorf("failed to find room: %w", err)
+    }
+}
+```
+
+---
+
+### ✅ MUST Use defer for Cleanup
+
+**Rule:** Use defer for resource cleanup.
+
+**Review Checklist:**
+- [ ] HTTP response bodies closed with defer
+- [ ] Context cancellation functions called with defer
+- [ ] File handles closed with defer
+- [ ] defer called immediately after resource acquisition
+
+**Example:**
+```go
+// ✅ GOOD: Immediate defer
+resp, err := http.Get(url)
+if err != nil {
+    return err
+}
+defer resp.Body.Close()  // Immediately after acquisition
+
+// ❌ BAD: Late defer
+resp, err := http.Get(url)
+if err != nil {
+    return err
+}
+body, _ := io.ReadAll(resp.Body)
+defer resp.Body.Close()  // Too late, should be earlier
+```
+
+---
+
+### ✅ MUST Handle Goroutines Safely
+
+**Rule:** Goroutines MUST have proper cleanup and error handling.
+
+**Review Checklist:**
+- [ ] Goroutines have clear termination conditions
+- [ ] Panic recovery in long-running goroutines
+- [ ] Context cancellation handled
+- [ ] Channels properly closed
+
+**Example:**
+```go
+// ✅ GOOD: Graceful shutdown with channels
+done := make(chan bool)
+quit := make(chan os.Signal, 1)
+signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+
+go func() {
+    <-quit
+    log.Info().Msg("shutting down...")
+
+    ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+    defer cancel()
+
+    if err := server.Shutdown(ctx); err != nil {
+        log.Fatal().Err(err).Msg("shutdown failed")
+    }
+    close(done)
+}()
+
+<-done
+
+// ❌ BAD: No cleanup
+go func() {
+    // Runs forever, no way to stop
+    for {
+        doWork()
+    }
+}()
+```
+
+---
+
+## 10. Security & Performance
+
+### ✅ MUST Validate Input
+
+**Rule:** All user input MUST be validated before processing.
+
+**Review Checklist:**
+- [ ] Path parameters validated
+- [ ] Query parameters validated
+- [ ] Request body validated (use validator tags when implemented)
+- [ ] Input sanitized before database operations
+- [ ] Error messages don't leak sensitive info
+
+**Example:**
+```go
+// ✅ GOOD: Input validation
+func (h *httpHandler) GetRoomByID(w http.ResponseWriter, r *http.Request) {
+    ctx := r.Context()
+
+    id, err := strconv.Atoi(r.PathValue("id"))
+    if err != nil {
+        resp.WriteJSONFromError(w, err)
+        return
+    }
+
+    if id <= 0 {
+        resp.WriteJSONFromError(w, errors.New("invalid room ID"))
+        return
+    }
+
+    // ... proceed with validated input
+}
+
+// ❌ BAD: No validation
+func (h *httpHandler) GetRoomByID(w http.ResponseWriter, r *http.Request) {
+    id, _ := strconv.Atoi(r.PathValue("id"))  // Ignores error
+    h.svc.GetRoomByID(r.Context(), int64(id))  // Uses potentially invalid input
+}
+```
+
+---
+
+### ✅ MUST Use Prepared Statements
+
+**Rule:** Database queries MUST use GORM's parameterized queries (no raw SQL).
+
+**Review Checklist:**
+- [ ] No string concatenation in queries
+- [ ] Use GORM API (automatic parameterization)
+- [ ] No `db.Exec()` with user input
+- [ ] No SQL injection vulnerabilities
+
+**Example:**
+```go
+// ✅ GOOD: GORM parameterized query
+err := r.db.WithContext(ctx).Where("id = ?", id).First(&room).Error
+
+// ❌ BAD: SQL injection risk
+query := fmt.Sprintf("SELECT * FROM rooms WHERE id = %d", id)
+err := r.db.WithContext(ctx).Raw(query).Scan(&room).Error
+```
+
+---
+
+### ✅ SHOULD Review CORS When Used
+
+**Rule:** Only review CORS configuration if `corsHandler` is actively used in middleware chain.
+
+**Review Checklist:**
+- [ ] Check if wildcard `Access-Control-Allow-Origin: *` is appropriate
+- [ ] Wildcard acceptable for public integration APIs
+- [ ] Consider restricting for internal APIs
+
+---
+
+### ✅ MUST Configure Connection Pools
+
+**Rule:** Database connection pools MUST be properly configured.
+
+**Review Checklist:**
+- [ ] `SetMaxIdleConns()` set to 10
+- [ ] `SetMaxOpenConns()` set to 100
+- [ ] `SetConnMaxLifetime()` set to 1 hour
+- [ ] Connection pool settings match production requirements
+
+**Example:**
+```go
+// ✅ GOOD: Proper pool configuration
+sqlDB, _ := db.DB()
+sqlDB.SetMaxIdleConns(10)
+sqlDB.SetMaxOpenConns(100)
+sqlDB.SetConnMaxLifetime(time.Hour)
+```
+
+---
+
+### ✅ MUST Implement Graceful Shutdown
+
+**Rule:** Servers MUST handle shutdown signals gracefully.
+
+**Review Checklist:**
+- [ ] Listen for SIGINT and SIGTERM
+- [ ] 30-second shutdown timeout
+- [ ] Disable keep-alives during shutdown
+- [ ] Wait for in-flight requests to complete
+
+**Example:**
+```go
+// ✅ GOOD: Graceful shutdown pattern (already in codebase)
+done := make(chan bool)
+quit := make(chan os.Signal, 1)
+signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+
+go func() {
+    <-quit
+    log.Info().Msg("server is shutting down...")
+
+    ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+    defer cancel()
+
+    httpSrv.SetKeepAlivesEnabled(false)
+    if err := httpSrv.Shutdown(ctx); err != nil {
+        log.Fatal().Err(err).Msg("could not gracefully shutdown the server")
+    }
+    close(done)
+}()
+
+<-done
+```
+
+---
+
+### ✅ MUST Use Request Timeouts
+
+**Rule:** HTTP clients MUST have timeouts configured.
+
+**Review Checklist:**
+- [ ] HTTP client has timeout set
+- [ ] Context deadlines used for long operations
+- [ ] Retry logic has maximum attempts
+- [ ] No infinite loops or hangs
+
+---
+
+## 11. Documentation Standards
+
+### ✅ SHOULD Add Godoc Comments
+
+**Rule:** Exported functions SHOULD have godoc comments.
+
+**Review Checklist:**
+- [ ] Exported functions have comments
+- [ ] Comments start with function name
+- [ ] Comments describe purpose, not implementation
+- [ ] Package-level doc.go for complex packages
+
+**Example:**
+```go
+// ✅ GOOD: Proper godoc
+// GetRoomByID retrieves a room by its unique identifier.
+// Returns an error if the room is not found or if there's a database issue.
+func (s *Service) GetRoomByID(ctx context.Context, id int64) (*entity.Room, error) {
+    // ...
+}
+
+// ❌ BAD: No comment
+func (s *Service) GetRoomByID(ctx context.Context, id int64) (*entity.Room, error) {
+    // ...
+}
+
+// ❌ BAD: Doesn't start with function name
+// Retrieves a room
+func (s *Service) GetRoomByID(ctx context.Context, id int64) (*entity.Room, error) {
+    // ...
+}
+```
+
+---
+
+### ✅ SHOULD Comment Complex Logic
+
+**Rule:** Non-obvious code SHOULD have explanatory comments.
+
+**Review Checklist:**
+- [ ] Complex algorithms explained
+- [ ] Business logic rationale documented
+- [ ] "Why" not "what" (code shows what)
+- [ ] Workarounds and gotchas explained
+
+**Example:**
+```go
+// ✅ GOOD: Explains "why"
+// We check for deleted rooms here because the database doesn't filter them.
+// This is required for backward compatibility with legacy integrations.
+if room.IsDeleted {
+    return nil, &roomError{roomErrorNotFound}
+}
+
+// ❌ BAD: States the obvious
+// Check if room is deleted
+if room.IsDeleted {
+    return nil, &roomError{roomErrorNotFound}
+}
+```
+
+---
+
+## 12. Common Anti-Patterns
+
+### ❌ NEVER Use Global State
+
+**Anti-Pattern:** Global variables for application state
+
+```go
+// ❌ BAD: Global state
+var globalDB *gorm.DB
+
+func init() {
+    globalDB = connectDB()
+}
+
+// ✅ GOOD: Dependency injection
+type Service struct {
+    db *gorm.DB
+}
+
+func NewService(db *gorm.DB) *Service {
+    return &Service{db: db}
+}
+```
+
+---
+
+### ❌ NEVER Ignore Errors
+
+**Anti-Pattern:** Using blank identifier for errors
+
+```go
+// ❌ BAD: Ignoring errors in critical operations
+room, _ := s.repo.FindByID(ctx, id)
+return room, nil
+
+// ✅ GOOD: Handle errors
+room, err := s.repo.FindByID(ctx, id)
+if err != nil {
+    return nil, fmt.Errorf("failed to find room: %w", err)
+}
+return room, nil
+
+// ⚠️ ACCEPTABLE EXCEPTION: Errors in non-critical logging/debugging only
+// When reading request body solely for logging purposes (not business logic),
+// it's acceptable to ignore errors if the operation continues normally.
+// Example from middleware.go and client.go:
+buf, _ := io.ReadAll(r.Body)  // Only for logging, body is restored after
+r.Body = io.NopCloser(bytes.NewBuffer(buf))
+
+// But prefer being explicit when possible:
+buf, err := io.ReadAll(r.Body)
+if err != nil {
+    log.Ctx(ctx).Warn().Err(err).Msg("failed to read body for logging")
+    buf = []byte{}
+}
+```
+
+---
+
+### ❌ NEVER Use Panic for Control Flow
+
+**Anti-Pattern:** Panic for expected errors
+
+```go
+// ❌ BAD: Panic for expected error
+func (s *Service) GetRoom(id int64) *entity.Room {
+    room, err := s.repo.FindByID(context.Background(), id)
+    if err != nil {
+        panic(err)  // Don't panic for expected errors
+    }
+    return room
+}
+
+// ✅ GOOD: Return error
+func (s *Service) GetRoom(ctx context.Context, id int64) (*entity.Room, error) {
+    room, err := s.repo.FindByID(ctx, id)
+    if err != nil {
+        return nil, fmt.Errorf("failed to find room: %w", err)
+    }
+    return room, nil
+}
+```
+
+---
+
+### ❌ NEVER Mix Business Logic in Handlers
+
+**Anti-Pattern:** Business logic in HTTP handlers
+
+```go
+// ❌ BAD: Business logic in handler
+func (h *httpHandler) CreateRoom(w http.ResponseWriter, r *http.Request) {
+    var req CreateRoomRequest
+    json.NewDecoder(r.Body).Decode(&req)
+
+    // Business logic in handler - WRONG
+    if req.Name == "" {
+        req.Name = "Default Room"
+    }
+
+    room := &entity.Room{Name: req.Name}
+    h.repo.Save(r.Context(), room)  // Handler calling repo directly - WRONG
+
+    resp.WriteJSON(w, http.StatusCreated, room)
+}
+
+// ✅ GOOD: Business logic in service
+func (h *httpHandler) CreateRoom(w http.ResponseWriter, r *http.Request) {
+    ctx := r.Context()
+
+    var req CreateRoomRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        resp.WriteJSONFromError(w, err)
+        return
+    }
+
+    room, err := h.svc.CreateRoom(ctx, req.Name)
+    if err != nil {
+        log.Ctx(ctx).Error().Msgf("failed to create room: %s", err.Error())
+        resp.WriteJSONFromError(w, err)
+        return
+    }
+
+    resp.WriteJSON(w, http.StatusCreated, room)
+}
+```
+
+---
+
+### ❌ NEVER Create God Objects
+
+**Anti-Pattern:** One service doing everything
+
+```go
+// ❌ BAD: God object
+type Service struct {
+    roomRepo     RoomRepository
+    userRepo     UserRepository
+    messageRepo  MessageRepository
+    authService  *AuthService
+    emailService *EmailService
+    // ... 20 more dependencies
+}
+
+// ✅ GOOD: Focused services
+type RoomService struct {
+    repo Repository
+    omni Omnichannel
+}
+
+type UserService struct {
+    repo UserRepository
+}
+```
+
+---
+
+### ❌ NEVER Use init() for Dependencies
+
+**Anti-Pattern:** Setting up dependencies in init()
+
+```go
+// ❌ BAD: Dependencies in init
+var db *gorm.DB
+
+func init() {
+    db = setupDatabase()  // Hard to test, can't inject
+}
+
+// ✅ GOOD: Explicit initialization
+func NewService() *Service {
+    cfg := config.Load()
+    db := postgres.NewGORM(cfg.Database)
+    return &Service{db: db}
+}
+```
+
+---
+
+## Review Checklist Summary
+
+Use this checklist when reviewing PRs:
+
+### Architecture
+- [ ] Follows module-based structure
+- [ ] Uses dependency injection
+- [ ] Interfaces defined at point of use
+- [ ] No circular dependencies
+
+### Code Quality
+- [ ] Follows naming conventions
+- [ ] Errors wrapped with context
+- [ ] Context propagated everywhere
+- [ ] Handlers follow 3-step pattern
+- [ ] Uses response utilities
+- [ ] Proper import organization
+- [ ] Early returns, low nesting
+
+### Database
+- [ ] GORM uses WithContext
+- [ ] Repository pattern followed
+- [ ] No business logic in repositories
+- [ ] Errors handled properly
+
+### Testing
+- [ ] Service methods have tests
+- [ ] Mocks generated with mockery
+- [ ] Expectations verified
+- [ ] Coverage threshold met (25%)
+
+### Security
+- [ ] Input validated
+- [ ] No SQL injection risks
+- [ ] Errors don't leak sensitive info
+- [ ] Proper authentication checks
+
+### Performance
+- [ ] Connection pools configured
+- [ ] Graceful shutdown implemented
+- [ ] HTTP timeouts set
+- [ ] No resource leaks
+
+### Documentation
+- [ ] Exported functions documented
+- [ ] Complex logic explained
+- [ ] README updated if needed
+
+### Anti-Patterns
+- [ ] No global state
+- [ ] No ignored errors
+- [ ] No panic for control flow
+- [ ] No business logic in handlers
+- [ ] No god objects
+- [ ] No init() for dependencies
+
+---
+
+## Automated Review Commands
+
+Before requesting review:
+
+```bash
+# Format and organize imports
+make tidy
+
+# Generate mocks
+make generate
+
+# Run tests with race detection
+make test
+
+# Verify coverage threshold
+make test/coverage
+
+# Build to verify compilation
+make build
+```
+
+All commands must pass before PR approval.
+
+---
+
+## Severity Levels
+
+When reviewing, use these severity levels:
+
+- **🔴 BLOCKER** - Must be fixed before merge (security, data loss, crashes)
+- **🟠 CRITICAL** - Should be fixed before merge (bugs, test failures, coverage)
+- **🟡 MAJOR** - Should be fixed soon (architecture violations, bad patterns)
+- **🔵 MINOR** - Nice to have (naming, documentation, optimization)
+- **⚪ SUGGESTION** - Optional improvements (refactoring, best practices)
+
+---
+
+## Version History
+
+- **v1.0** (2025-10-02) - Initial release based on codebase analysis
+
+---
+
+## Contributing to These Rules
+
+These rules should evolve with the codebase. When updating:
+
+1. Ensure changes align with existing patterns
+2. Provide examples (good and bad)
+3. Update severity if needed
+4. Document rationale for changes
+"""

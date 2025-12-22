@@ -66,10 +66,10 @@ func (s *Sanitizer) SanitizeHeaders(headers http.Header) http.Header {
 	sanitized := make(http.Header, len(headers))
 	for key, values := range headers {
 		if s.isSensitiveHeader(key) {
-			sanitized[key] = []string{RedactedValue}
-		} else {
-			sanitized[key] = values
+			values = []string{RedactedValue}
 		}
+
+		sanitized[key] = values
 	}
 	return sanitized
 }
@@ -84,10 +84,10 @@ func (s *Sanitizer) SanitizeHeadersMap(headers map[string]string) map[string]str
 	sanitized := make(map[string]string, len(headers))
 	for key, value := range headers {
 		if s.isSensitiveHeader(key) {
-			sanitized[key] = RedactedValue
-		} else {
-			sanitized[key] = value
+			value = RedactedValue
 		}
+
+		sanitized[key] = value
 	}
 	return sanitized
 }
@@ -110,9 +110,10 @@ func (s *Sanitizer) sanitizeMap(m map[string]any) map[string]any {
 	for key, value := range m {
 		if s.isSensitiveField(key) {
 			result[key] = RedactedValue
-		} else {
-			result[key] = s.sanitizeValue(value)
+			continue
 		}
+
+		result[key] = s.sanitizeValue(value)
 	}
 	return result
 }

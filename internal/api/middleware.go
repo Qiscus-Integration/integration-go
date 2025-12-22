@@ -127,7 +127,7 @@ func loggerHandler(filter func(w http.ResponseWriter, r *http.Request) bool) fun
 				UserAgent:  r.UserAgent(),
 				Method:     r.Method,
 				Path:       r.URL.Path,
-				Body:       formatReqBody(r, buf),
+				Body:       sanitizerInstance.SanitizeJSON(buf),
 				Headers:    sanitizerInstance.SanitizeHeaders(r.Header),
 				StatusCode: ww.Status(),
 				Latency:    dur,
@@ -139,10 +139,6 @@ func loggerHandler(filter func(w http.ResponseWriter, r *http.Request) bool) fun
 
 		})
 	}
-}
-
-func formatReqBody(_ *http.Request, data []byte) string {
-	return sanitizerInstance.SanitizeJSON(data)
 }
 
 func realIPHandler(next http.Handler) http.Handler {

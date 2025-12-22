@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"integration-go/internal/sanitizer"
 	"io"
 	"net/http"
 	"strings"
@@ -13,6 +14,8 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/rs/zerolog/log"
 )
+
+var sanitizerInstance = sanitizer.New()
 
 type Client struct {
 	HTTPClient *http.Client
@@ -88,7 +91,8 @@ func (c *Client) Call(ctx context.Context, method, url string, body io.Reader, h
 		log.Ctx(ctx).Info().
 			Str("method", resp.Request.Method).
 			Str("url", resp.Request.URL.String()).
-			Str("body", string(reqBody)).
+			Str("body", sanitizerInstance.SanitizeJSON(reqBody)).
+			Interface("headers", sanitizerInstance.SanitizeHeaders(resp.Request.Header)).
 			Int("status_code", resp.StatusCode).
 			Float64("latency", float64(latency.Nanoseconds()/1e4)/100.0).
 			Msg("outbound request")

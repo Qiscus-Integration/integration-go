@@ -3,9 +3,9 @@ package api
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"integration-go/internal/config"
+	"integration-go/internal/sanitizer"
 	"io"
 	"net"
 	"net/http"
@@ -17,6 +17,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
+
+var sanitizerInstance = sanitizer.New()
 
 type Middleware func(http.Handler) http.Handler
 
@@ -72,6 +74,7 @@ type logFields struct {
 	Method     string
 	Path       string
 	Body       string
+	Headers    http.Header
 	StatusCode int
 	Latency    float64
 }
@@ -84,6 +87,7 @@ func (l *logFields) MarshalZerologObject(e *zerolog.Event) {
 		Str("method", l.Method).
 		Str("path", l.Path).
 		Str("body", l.Body).
+		Interface("headers", l.Headers).
 		Int("status_code", l.StatusCode).
 		Float64("latency", l.Latency)
 }
@@ -123,7 +127,8 @@ func loggerHandler(filter func(w http.ResponseWriter, r *http.Request) bool) fun
 				UserAgent:  r.UserAgent(),
 				Method:     r.Method,
 				Path:       r.URL.Path,
-				Body:       formatReqBody(r, buf),
+				Body:       sanitizerInstance.SanitizeJSON(buf),
+				Headers:    sanitizerInstance.SanitizeHeaders(r.Header),
 				StatusCode: ww.Status(),
 				Latency:    dur,
 			}
@@ -134,21 +139,6 @@ func loggerHandler(filter func(w http.ResponseWriter, r *http.Request) bool) fun
 
 		})
 	}
-}
-
-func formatReqBody(r *http.Request, data []byte) string {
-	var js map[string]any
-	if json.Unmarshal(data, &js) != nil {
-		return string(data)
-	}
-
-	result := new(bytes.Buffer)
-	if err := json.Compact(result, data); err != nil {
-		log.Ctx(r.Context()).Error().Msgf("error compacting body request json: %s", err.Error())
-		return ""
-	}
-
-	return result.String()
 }
 
 func realIPHandler(next http.Handler) http.Handler {
@@ -212,7 +202,6 @@ func recoverHandler(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-
 
 func requestIDHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

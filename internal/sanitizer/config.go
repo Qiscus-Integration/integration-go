@@ -106,6 +106,7 @@ func defaultSensitiveHeaders() map[string]struct{} {
 	return map[string]struct{}{
 		"authorization":       {},
 		"qiscus-secret-key":   {},
+		"qiscus-app-secret":   {},
 		"x-api-key":           {},
 		"x-auth-token":        {},
 		"cookie":              {},

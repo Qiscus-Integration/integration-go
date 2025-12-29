@@ -132,20 +132,27 @@ type Repository interface {  // Don't define where you implement
 
 **Review Checklist:**
 - [ ] All application code in `internal/` (private to this module)
+- [ ] Core domain packages in `internal/` (room, resolver, entity, health)
+- [ ] Infrastructure packages in `internal/pkg/` (api, auth, client, config, etc.)
 - [ ] Entry points in `cmd/` directory
 - [ ] Shared entities in `internal/entity/`
-- [ ] No `pkg/` directory (use `internal/` instead)
 - [ ] Tests co-located with source files
 
 **Directory Rules:**
 ```
-✅ GOOD:
+✅ GOOD - Core domain:
 internal/room/service.go
 internal/room/service_test.go
+internal/entity/room.go
+
+✅ GOOD - Infrastructure:
+internal/pkg/api/server.go
+internal/pkg/config/env.go
+internal/pkg/postgres/gorm.go
 
 ❌ BAD:
-pkg/room/service.go
-tests/room/service_test.go
+pkg/room/service.go  (should be internal/room/ or internal/pkg/)
+tests/room/service_test.go  (tests must be co-located)
 ```
 
 ---
@@ -945,7 +952,7 @@ import (
     "time"
 
     "integration-go/internal/entity"
-    "integration-go/internal/config"
+    "integration-go/internal/pkg/config"
 
     "github.com/rs/zerolog/log"
     "gorm.io/gorm"

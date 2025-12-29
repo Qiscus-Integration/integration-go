@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"integration-go/internal/entity"
-	"integration-go/internal/qismo"
+	"integration-go/internal/pkg/qismo"
 	"integration-go/internal/room/mocks"
 	"testing"
 

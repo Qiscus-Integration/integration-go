@@ -2,12 +2,12 @@ package cron
 
 import (
 	"context"
-	"integration-go/internal/client"
-	"integration-go/internal/config"
-	"integration-go/internal/postgres"
-	"integration-go/internal/qismo"
 	"integration-go/internal/resolver"
 	"integration-go/internal/room"
+	"integration-go/internal/pkg/client"
+	"integration-go/internal/pkg/config"
+	"integration-go/internal/pkg/postgres"
+	"integration-go/internal/pkg/qismo"
 	"time"
 
 	"github.com/go-co-op/gocron"

@@ -147,7 +147,7 @@ package yourmodule
 
 import (
     "encoding/json"
-    "integration-go/internal/api/resp"
+    "integration-go/internal/pkg/api/resp"
     "net/http"
     "strconv"
 

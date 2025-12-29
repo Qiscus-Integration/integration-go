@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"integration-go/internal/sanitizer"
+	"integration-go/internal/pkg/sanitizer"
 	"io"
 	"net/http"
 	"strings"

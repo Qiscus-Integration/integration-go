@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"integration-go/internal/entity"
-	"integration-go/internal/qismo"
+	"integration-go/internal/pkg/qismo"
 
 	"gorm.io/gorm"
 )

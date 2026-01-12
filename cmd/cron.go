@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"integration-go/internal/cron"
+	"integration-go/internal/pkg/cron"
 
 	"github.com/spf13/cobra"
 )

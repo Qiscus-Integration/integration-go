@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"integration-go/internal/api/resp"
+	"integration-go/internal/pkg/api/resp"
 	"net/http"
 )
 

@@ -1,7 +1,7 @@
 package postgres
 
 import (
-	"integration-go/internal/config"
+	"integration-go/internal/pkg/config"
 	"time"
 
 	"github.com/rs/zerolog/log"
